@@ -37,6 +37,9 @@ vesk = "vesk.cli:app"
 [tool.hatch.version]
 path = "src/vesk/__init__.py"
 
+[tool.hatch.build.targets.sdist]
+exclude = [".claude", ".github"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/vesk"]
 
