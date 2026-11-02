@@ -163,7 +163,7 @@ def scan(
 @app.command()
 def report(
     results: Path = typer.Argument(Path("results.json"), help="Results JSON from `vesk scan`."),
-    fmt: str = typer.Option("md", "--format", help="md or html."),
+    fmt: str = typer.Option("md", "--format", help="md, html, sarif or junit."),
     output: Path | None = typer.Option(None, "-o", "--output", help="Output file."),
 ) -> None:
     """Render a report from a results JSON file."""
@@ -177,5 +177,8 @@ def report(
     if output is None:
         typer.echo(text, nl=False)
     else:
+        from vesk.report.machine import write_sidecar
+
         output.write_text(text, encoding="utf-8")
-        typer.echo(f"wrote {output}", err=True)
+        side = write_sidecar(output)
+        typer.echo(f"wrote {output} and {side.name} (SHA-256 detects file changes; not a signature)", err=True)
