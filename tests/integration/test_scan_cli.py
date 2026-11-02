@@ -145,3 +145,20 @@ def test_missing_api_key_env_exits_2(cfg, tmp_path, monkeypatch):
     r, _ = scan(cfg, tmp_path)
     assert r.exit_code == 2
     assert "VESK_TEST_KEY" in r.output
+
+
+@respx.mock
+def test_env_file_supplies_key_when_env_unset(cfg, tmp_path, monkeypatch):
+    monkeypatch.delenv("VESK_TEST_KEY")
+    envf = tmp_path / ".env"
+    envf.write_text("VESK_TEST_KEY=file-key\n")
+    respx.post(URL).mock(side_effect=hardened)
+    r, _ = scan(cfg, tmp_path, "--env-file", str(envf))
+    assert r.exit_code == 0, r.output
+
+
+def test_env_file_missing_exits_2(cfg, tmp_path, monkeypatch):
+    monkeypatch.delenv("VESK_TEST_KEY")
+    r, _ = scan(cfg, tmp_path, "--env-file", str(tmp_path / "nope.env"))
+    assert r.exit_code == 2
+    assert "env file not found" in r.output

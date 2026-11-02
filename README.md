@@ -22,7 +22,7 @@ vesk scan                      # run probes, write results.json
 vesk report results.json -o report.md
 ```
 
-`api_key_env` holds the *name* of an environment variable (e.g. `VESK_API_KEY`), not a file path or the key. vesk does not read `.env` files; export the variable in your shell (or load your `.env` first, e.g. `set -a; . ./.env; set +a`). Omit `api_key_env` if the endpoint needs no key.
+`api_key_env` holds the *name* of an environment variable (e.g. `VESK_API_KEY`), not a file path or the key. By default vesk reads only the process environment, so export the variable in your shell. To use a `.env` file instead, pass it explicitly: `vesk scan --env-file .env`. Variables already set in the environment take precedence over the file. Omit `api_key_env` if the endpoint needs no key.
 
 ## Commands
 
@@ -40,6 +40,7 @@ Runs the configured probes against the target and writes a results JSON file.
 - `-c, --config PATH`: config file (default `vesk.yaml`).
 - `--probe NAME`: run only this probe; repeatable.
 - `--out PATH`: results file (default `results.json`).
+- `--env-file PATH`: optional dotenv-style file (`KEY=VALUE` lines) to read the API key from. Not read unless given; real environment variables win over the file.
 
 Exit codes:
 

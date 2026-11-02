@@ -51,8 +51,12 @@ class Config(_Strict):
     scan: ScanConfig = Field(default_factory=lambda: ScanConfig())
     report: ReportConfig = Field(default_factory=lambda: ReportConfig())
 
-    def api_key(self) -> str | None:
-        """Read the API key from the environment variable named in the config."""
+    def api_key(self, env_file: Path | None = None) -> str | None:
+        """Read the API key from the environment variable named in the config.
+
+        If env_file is given, its values fill in variables missing from the process
+        environment; variables already set in the environment take precedence.
+        """
         name = self.target.api_key_env
         if not name:
             return None
@@ -63,15 +67,45 @@ class Config(_Strict):
                 "the key itself, then export that variable: export VESK_API_KEY=<your key>"
             )
         key = os.environ.get(name)
+        if not key and env_file is not None:
+            key = read_env_file(env_file).get(name)
         if not key:
             raise ConfigError(
                 f"environment variable {name} is not set or is empty "
                 f"(named by target.api_key_env in your config). "
                 f"Export it in this shell first: export {name}=<your key>. "
-                "vesk does not read .env files. If the endpoint needs no key, "
-                "remove api_key_env from the config."
+                "Or put it in a .env file and pass --env-file .env "
+                "(vesk only reads .env files when you pass --env-file). "
+                "If the endpoint needs no key, remove api_key_env from the config."
             )
         return key
+
+
+def read_env_file(path: Path) -> dict[str, str]:
+    """Parse a dotenv-style file: KEY=VALUE lines, # comments, optional `export `, quotes."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        raise ConfigError(f"env file not found: {path}") from None
+    except (OSError, UnicodeDecodeError) as e:
+        raise ConfigError(f"cannot read env file {path}: {e}") from e
+    values: dict[str, str] = {}
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[len("export ") :].lstrip()
+        name, sep, value = line.partition("=")
+        name, value = name.strip(), value.strip()
+        if not sep or not name.isidentifier():
+            continue
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        elif " #" in value:
+            value = value.split(" #", 1)[0].rstrip()
+        values[name] = value
+    return values
 
 
 def load_config(path: Path) -> Config:

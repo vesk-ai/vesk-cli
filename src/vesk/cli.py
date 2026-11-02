@@ -54,6 +54,12 @@ def scan(
     config: Path = typer.Option(Path("vesk.yaml"), "-c", "--config", help="Config file."),
     probe: list[str] | None = typer.Option(None, "--probe", help="Probe to run (repeatable)."),
     out: Path = typer.Option(Path("results.json"), "--out", help="Results JSON path."),
+    env_file: Path | None = typer.Option(
+        None,
+        "--env-file",
+        help="Optional .env file to read the API key from. "
+        "Variables already set in the environment win. Without it, only the environment is used.",
+    ),
 ) -> None:
     """Run probes against the target and write a results JSON file."""
     import asyncio
@@ -65,7 +71,7 @@ def scan(
     try:
         cfg = load_config(config)
         probes = select_probes(cfg, probe)
-        api_key = cfg.api_key()
+        api_key = cfg.api_key(env_file)
     except ConfigError as e:
         typer.echo(f"vesk scan: {e}", err=True)
         raise typer.Exit(2) from e

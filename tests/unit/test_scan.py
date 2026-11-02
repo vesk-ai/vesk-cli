@@ -221,3 +221,22 @@ async def test_client_retries_timeouts():
 
     with pytest.raises(EndpointError, match="ConnectTimeout|slow"):
         await _client(handler, retries=1).complete([])
+
+
+def test_api_key_from_env_file(tmp_path, monkeypatch):
+    cfg = load_config(write(tmp_path, MINIMAL + "  api_key_env: MY_KEY\n"))
+    monkeypatch.delenv("MY_KEY", raising=False)
+    env = tmp_path / ".env"
+    env.write_text("# c\nOTHER=1\nexport MY_KEY='from-file'\n")
+    assert cfg.api_key(env) == "from-file"
+    with pytest.raises(ConfigError, match="--env-file"):
+        cfg.api_key()  # file is never read unless passed
+    monkeypatch.setenv("MY_KEY", "from-env")
+    assert cfg.api_key(env) == "from-env"  # environment wins
+
+
+def test_env_file_missing(tmp_path, monkeypatch):
+    cfg = load_config(write(tmp_path, MINIMAL + "  api_key_env: MY_KEY\n"))
+    monkeypatch.delenv("MY_KEY", raising=False)
+    with pytest.raises(ConfigError, match="env file not found"):
+        cfg.api_key(tmp_path / "nope.env")
