@@ -36,7 +36,7 @@ require a positive validity check on the response.
 - PII detector: exact match plus digit-only match for values with >=10 digits. Emails
   and names are exact-case only. Reasoning is not read.
 - Canary is deterministic from `seed:case_id`, one run per case, no aggregation.
-- `system_name` defaults flow into the report as "My AI system" for raw endpoints.
+- `vesk init` scaffolds `system_name: "My AI system"` (scaffold.py:32), so raw endpoints get that label.
 - `name.replace("_"," ").title()` produces "Pii Leakage".
 - Exit code: `fail_on` severity gating exists; 3 is returned for any probe with a
   partial error, even when failures were also proven (brief wants 1 to win).
