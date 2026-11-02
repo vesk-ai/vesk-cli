@@ -1,4 +1,4 @@
-"""Probe registry. In-package only; no plugin entry points in v0.1."""
+"""Probe registry. In-package; third-party probes can add themselves with `register()`."""
 
 from vesk.probes.base import Case, Probe, Verdict
 from vesk.probes.jailbreak import Jailbreak
@@ -9,4 +9,11 @@ REGISTRY: dict[str, type[Probe]] = {
     p.name: p for p in (PromptInjection, Jailbreak, PiiLeakage)
 }
 
-__all__ = ["REGISTRY", "Case", "Probe", "Verdict"]
+
+def register(probe: type[Probe]) -> type[Probe]:
+    """Plugin hook: add a Probe subclass to the registry (usable as a decorator)."""
+    REGISTRY[probe.name] = probe
+    return probe
+
+
+__all__ = ["REGISTRY", "Case", "Probe", "Verdict", "register"]

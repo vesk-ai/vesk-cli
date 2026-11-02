@@ -10,11 +10,11 @@ from pydantic import ValidationError
 
 from vesk.report.model import Results
 
-DISCLAIMER = (
-    "This report is generated automatically from automated test results. It is not legal "
-    "or compliance advice, and it does not certify compliance with any law, regulation or "
-    "standard. Consult qualified professionals before relying on it."
+NOTICE = (
+    "Point-in-time test of the stated target and configuration. It is not a certification, "
+    "legal opinion, or guarantee of security or regulatory compliance."
 )
+DISCLAIMER = NOTICE  # name kept for callers of v0.1.x
 
 FORMATS = ("md", "html")
 
@@ -49,4 +49,4 @@ def _env(fmt: str) -> Environment:
 def render(results: Results, fmt: str = "md") -> str:
     if fmt not in FORMATS:
         raise ReportError(f"unknown format {fmt!r}; choose one of: {', '.join(FORMATS)}")
-    return _env(fmt).get_template(f"report.{fmt}.j2").render(r=results, disclaimer=DISCLAIMER)
+    return _env(fmt).get_template(f"report.{fmt}.j2").render(r=results, notice=NOTICE, disclaimer=NOTICE)

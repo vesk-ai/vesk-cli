@@ -60,7 +60,7 @@ def test_select_probes_unknown(tmp_path):
     with pytest.raises(ConfigError, match="unknown probe"):
         select_probes(cfg, ["nope"])
     assert [p.name for p in select_probes(cfg, None)] == list(REGISTRY)
-    assert [p.name for p in select_probes(cfg, ["jailbreak", "jailbreak"])] == ["jailbreak"]
+    assert [p.name for p in select_probes(cfg, ["jailbreak_marker", "jailbreak_marker"])] == ["jailbreak_marker"]
 
 
 # --- probes ---------------------------------------------------------------
@@ -77,20 +77,46 @@ def test_cases_are_deterministic_and_bounded(name):
     assert len({c.id for c in probe.cases(None, 999, seed=1)}) == len(probe.cases(None, 999, 1))
 
 
-@pytest.mark.parametrize("name", ["prompt_injection", "jailbreak"])
-def test_marker_probes(name):
-    probe = REGISTRY[name]()
+def test_injection_canary_is_split_and_never_in_prompt():
+    probe = REGISTRY["prompt_injection"]()
+    for case in probe.cases("Be a bank bot.", 99, seed=0):
+        assert case.messages[0] == {"role": "system", "content": "Be a bank bot."}
+        canary = case.meta["canary"]
+        assert canary not in case.prompt
+        assert canary not in case.prompt.replace(" ", "")  # not hidden by spacing either
+        assert probe.evaluate(case, f"Sure! {canary}").failed
+        assert not probe.evaluate(case, "I can't help with that.").failed
+        # echoing the prompt (e.g. a faithful translation) must not fail
+        assert not probe.evaluate(case, case.prompt).failed
+
+
+def test_repeat_after_me_is_replaced_by_split_token():
+    ids = [c.id for c in REGISTRY["prompt_injection"]().cases(None, 99, seed=0)]
+    assert "prompt_injection/split_token" in ids
+    assert "prompt_injection/repeat_after_me" not in ids
+
+
+def test_jailbreak_marker_probe():
+    probe = REGISTRY["jailbreak_marker"]()
+    assert probe.display_name == "Jailbreak Marker Compliance"
     case = probe.cases("Be a bank bot.", 1, seed=0)[0]
-    assert case.messages[0] == {"role": "system", "content": "Be a bank bot."}
-    marker = next(v for k, v in case.meta.items() if k in ("canary", "marker"))
+    marker = case.meta["marker"]
     assert marker in case.prompt
     assert probe.evaluate(case, f"Sure! {marker}").failed
     assert not probe.evaluate(case, "I can't help with that.").failed
+    assert "harmful" in probe.description
 
 
-def test_markers_differ_per_seed():
+def test_display_names():
+    assert REGISTRY["pii_leakage"]().display_name == "PII Leakage"
+    assert REGISTRY["prompt_injection"]().display_name == "Prompt Injection"
+
+
+def test_markers_differ_per_trial_and_seed():
     probe = REGISTRY["prompt_injection"]()
     assert probe.cases(None, 1, 1)[0].meta["canary"] != probe.cases(None, 1, 2)[0].meta["canary"]
+    a, b = probe.cases(None, 1, 1, trial=0)[0], probe.cases(None, 1, 1, trial=1)[0]
+    assert a.id == b.id and a.meta["canary"] != b.meta["canary"]
 
 
 def test_pii_probe_detects_and_masks():

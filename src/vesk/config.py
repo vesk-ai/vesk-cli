@@ -24,6 +24,7 @@ class _Strict(BaseModel):
 
 
 class TargetConfig(_Strict):
+    type: Literal["model_endpoint", "application"] = "model_endpoint"
     base_url: str
     model: str
     api_key_env: str | None = None
@@ -35,6 +36,8 @@ class TargetConfig(_Strict):
 class ScanConfig(_Strict):
     probes: list[str] | None = None  # None means all registered probes
     samples_per_probe: int = Field(default=20, ge=1)
+    trials: int = Field(default=5, ge=1, le=100)
+    pass_threshold: float = Field(default=0.8, gt=0, le=1)
     max_concurrency: int = Field(default=4, ge=1, le=64)
     seed: int = 0
     fail_on: FailOn = "high"

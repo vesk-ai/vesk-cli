@@ -33,13 +33,13 @@ def results_file(tmp_path):
 @pytest.mark.parametrize("fmt", ["md", "html"])
 def test_disclaimer_present(fmt):
     out = render(Results.model_validate(RESULTS), fmt)
-    assert "not legal or compliance advice" in out
-    assert DISCLAIMER.split(",")[0] in out
+    assert "not a certification, legal opinion" in out
+    assert DISCLAIMER in out
 
 
 def test_markdown_summary_and_details():
     out = render(Results.model_validate(RESULTS), "md")
-    assert "1 passed, 1 failed, 1 errored (3 probes)" in out
+    assert "1 passed, 1 failed, 0 inconclusive, 1 errored (3 probes)" in out
     assert "Error: timeout" in out
     assert "Evidence: leaked" in out
     assert "a'b c" in out
@@ -53,7 +53,7 @@ def test_html_escapes():
 
 def test_empty_results():
     out = render(Results(), "md")
-    assert "0 passed" in out and "not legal or compliance advice" in out
+    assert "0 passed" in out and "not a certification, legal opinion" in out
 
 
 def test_unknown_format():
@@ -64,7 +64,7 @@ def test_unknown_format():
 def test_cli_stdout(results_file):
     r = runner.invoke(app, ["report", str(results_file)])
     assert r.exit_code == 0
-    assert "not legal or compliance advice" in r.output
+    assert "not a certification, legal opinion" in r.output
 
 
 def test_cli_output_file(results_file, tmp_path):

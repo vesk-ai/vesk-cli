@@ -58,6 +58,21 @@ def scan(
     reasoning_effort: str | None = typer.Option(
         None, "--reasoning-effort", help="Sent as reasoning_effort (e.g. low, medium, high)."
     ),
+    trials: int | None = typer.Option(
+        None, "--trials", min=1, help="Trials per case (default 5, or scan.trials in the config)."
+    ),
+    system_prompt_file: Path | None = typer.Option(
+        None, "--system-prompt-file", help="Text file with the system prompt to test under."
+    ),
+    system_name: str | None = typer.Option(
+        None, "--system-name", help="Name of the system under test, shown in the report."
+    ),
+    include_system_prompt: bool = typer.Option(
+        False, "--include-system-prompt", help="Store the system prompt text in the results."
+    ),
+    redact: bool = typer.Option(
+        False, "--redact", help="Replace prompts, responses and reasoning with length markers."
+    ),
     env_file: Path | None = typer.Option(
         None,
         "--env-file",
@@ -70,10 +85,24 @@ def scan(
 
     from vesk.client import ChatClient
     from vesk.config import ConfigError, load_config
-    from vesk.runner import run_scan, select_probes
+    from vesk.runner import RunOptions, run_scan, select_probes
 
     try:
         cfg = load_config(config)
+        source = "config" if cfg.target.system_prompt else "default_baseline"
+        if system_prompt_file is not None:
+            try:
+                text = system_prompt_file.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError) as e:
+                raise ConfigError(f"cannot read system prompt file {system_prompt_file}: {e}") from e
+            if not text.strip():
+                raise ConfigError(f"system prompt file {system_prompt_file} is empty")
+            cfg.target.system_prompt = text
+            source = "file"
+        if trials is not None:
+            cfg.scan.trials = trials
+        if system_name is not None:
+            cfg.report.system_name = system_name
         probes = select_probes(cfg, probe)
         api_key = cfg.api_key(env_file)
     except ConfigError as e:
@@ -91,10 +120,27 @@ def scan(
             reasoning_effort=reasoning_effort,
         )
         try:
-            return await run_scan(cfg, probes, client, progress=lambda m: typer.echo(m, err=True))
+            return await run_scan(
+                cfg,
+                probes,
+                client,
+                progress=lambda m: typer.echo(m, err=True),
+                options=RunOptions(
+                    system_prompt_source=source,
+                    include_system_prompt=include_system_prompt,
+                    redact=redact,
+                    secrets=[api_key] if api_key else [],
+                ),
+            )
         finally:
             await client.aclose()
 
+    if not redact:
+        typer.echo(
+            "Note: results.json contains full prompts and model responses and may hold "
+            "sensitive data. Use --redact to strip them.",
+            err=True,
+        )
     results = asyncio.run(_go())
     try:
         results.write(out)
@@ -105,6 +151,8 @@ def scan(
     for p in results.probes:
         failed = sum(1 for c in p.cases if c.status == "fail")
         line = f"{p.id}: {p.status} ({failed}/{len(p.cases)} cases failed)"
+        if p.status == "inconclusive":
+            line += " (inconclusive: not a pass)"
         typer.echo(line + (f" [{p.error}]" if p.error else ""))
     typer.echo(f"wrote {out}")
     code = results.exit_code(cfg.scan.fail_on)
