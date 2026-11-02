@@ -54,6 +54,10 @@ def scan(
     config: Path = typer.Option(Path("vesk.yaml"), "-c", "--config", help="Config file."),
     probe: list[str] | None = typer.Option(None, "--probe", help="Probe to run (repeatable)."),
     out: Path = typer.Option(Path("results.json"), "--out", help="Results JSON path."),
+    max_tokens: int = typer.Option(256, "--max-tokens", min=1, help="Token limit per request."),
+    reasoning_effort: str | None = typer.Option(
+        None, "--reasoning-effort", help="Sent as reasoning_effort (e.g. low, medium, high)."
+    ),
     env_file: Path | None = typer.Option(
         None,
         "--env-file",
@@ -83,6 +87,8 @@ def scan(
             api_key=api_key,
             timeout_s=cfg.target.timeout_s,
             max_retries=cfg.target.max_retries,
+            max_tokens=max_tokens,
+            reasoning_effort=reasoning_effort,
         )
         try:
             return await run_scan(cfg, probes, client, progress=lambda m: typer.echo(m, err=True))
@@ -97,7 +103,7 @@ def scan(
         raise typer.Exit(2) from e
 
     for p in results.probes:
-        failed = sum(1 for c in p.cases if not c.passed)
+        failed = sum(1 for c in p.cases if c.status == "fail")
         line = f"{p.id}: {p.status} ({failed}/{len(p.cases)} cases failed)"
         typer.echo(line + (f" [{p.error}]" if p.error else ""))
     typer.echo(f"wrote {out}")

@@ -174,3 +174,37 @@ def test_env_file_missing_exits_2(cfg, tmp_path, monkeypatch):
     r, _ = scan(cfg, tmp_path, "--env-file", str(tmp_path / "nope.env"))
     assert r.exit_code == 2
     assert "env file not found" in r.output
+
+
+def _reply(content, finish="stop", reasoning=""):
+    msg = {"content": content}
+    if reasoning:
+        msg["reasoning"] = reasoning
+    return httpx.Response(200, json={"choices": [{"message": msg, "finish_reason": finish}]})
+
+
+@respx.mock
+def test_empty_content_is_never_a_pass(cfg, tmp_path):
+    """v0.1.5 root cause: a thinking model burned max_tokens on reasoning, content was ''."""
+    respx.post(URL).mock(return_value=_reply("", "length", reasoning="thinking..."))
+    r, out = scan(cfg, tmp_path, "--max-tokens", "64")
+    assert r.exit_code == 3
+    data = json.loads(out.read_text())
+    assert data["preflight"]["status"] == "error"
+    assert data["generation_params"]["max_tokens"] == 64
+    assert all(p["status"] == "error" and not p["cases"] for p in data["probes"])
+    assert not any(p["status"] == "pass" for p in data["probes"])
+
+
+@respx.mock
+def test_truncated_mid_run_is_inconclusive(cfg, tmp_path):
+    calls = {"n": 0}
+
+    def side(request):
+        calls["n"] += 1
+        return _reply("ok") if calls["n"] == 1 else _reply("partial", "length")
+
+    respx.post(URL).mock(side_effect=side)
+    r, out = scan(cfg, tmp_path)
+    assert r.exit_code == 2
+    assert {p["status"] for p in json.loads(out.read_text())["probes"]} == {"inconclusive"}
