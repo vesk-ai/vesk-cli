@@ -28,10 +28,23 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install build
+      - run: pip install build twine
       - run: python -m build
+      - run: twine check dist/*
       - name: Install wheel in a clean venv and smoke-test
         run: |
           python -m venv /tmp/clean
           /tmp/clean/bin/pip install dist/*.whl
           /tmp/clean/bin/vesk --help
+          /tmp/clean/bin/python -c "import vesk; print(vesk.__version__)"
+          mkdir /tmp/work && cd /tmp/work
+          /tmp/clean/bin/vesk init
+          test -f vesk.yaml
+          /tmp/clean/bin/vesk scan --help
+          /tmp/clean/bin/vesk report --help
+          /tmp/clean/bin/vesk compare --help
+      - name: Install sdist in a clean venv
+        run: |
+          python -m venv /tmp/clean-sdist
+          /tmp/clean-sdist/bin/pip install dist/*.tar.gz
+          /tmp/clean-sdist/bin/vesk --help
