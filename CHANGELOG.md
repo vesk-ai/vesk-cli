@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1 - 2026-11-02
+
+### Added
+- `vesk scan` prints live per-request progress to stderr (prompt excerpt, verdict, latency); `-q/--quiet` turns it off. Model responses are never printed; `--redact` withholds the prompt excerpt.
+
 ## 0.2.0 - 2026-11-02
 
 See docs/schema-v2.md for the upgrade note.
