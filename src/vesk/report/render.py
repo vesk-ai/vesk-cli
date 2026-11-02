@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+from jinja2 import Environment, FileSystemLoader
 from pydantic import ValidationError
 
 from vesk.report.model import Results
@@ -39,7 +39,7 @@ def load_results(path: Path) -> Results:
 def _env(fmt: str) -> Environment:
     return Environment(
         loader=FileSystemLoader(Path(__file__).parent / "templates"),
-        autoescape=select_autoescape(["html"]) if fmt == "html" else False,
+        autoescape=fmt == "html",
         trim_blocks=True,
         lstrip_blocks=True,
         keep_trailing_newline=True,
