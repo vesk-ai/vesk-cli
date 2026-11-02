@@ -41,19 +41,28 @@ Runs the configured probes against the target and writes a results JSON file.
 - `--probe NAME`: run only this probe; repeatable.
 - `--out PATH`: results file (default `results.json`).
 - `--env-file PATH`: optional dotenv-style file (`KEY=VALUE` lines) to read the API key from. Not read unless given; real environment variables win over the file.
+- `--trials N`: trials per case (default 5). A fresh canary is generated for every trial.
+- `--max-tokens N`, `--reasoning-effort LEVEL`: sent to the target and recorded in the results. Thinking models need a larger `--max-tokens`, or they spend it all on reasoning and return empty content (reported as `error` at preflight, `inconclusive` mid-run; never a pass).
+- `--system-prompt-file PATH`, `--system-name NAME`: the system prompt to test under, and the name shown in the report. Without a prompt, a versioned baseline prompt is used and recorded.
+- `--include-system-prompt`: store the system prompt text in the results (off by default; only its hash is stored).
+- `--redact`: replace prompts, responses and reasoning in the results with length markers.
+- `--cases PATH`: your own test cases (YAML or JSON, repeatable). See [docs/custom-cases.md](docs/custom-cases.md).
+- `--judge`: also ask the bring-your-own judge from the config. Responses are sent to the judge endpoint.
 
-While running, `vesk scan` prints progress to stderr: target host and model, each probe's start and status, and request counts. It never prints prompts, responses, API keys, URL paths or credentials; those stay in the results file only (with PII masked).
+While running, `vesk scan` prints progress to stderr: target host and model, each probe's start and status, and request counts. It never prints prompts, responses, API keys, URL paths or credentials. The results file contains full prompts and responses and may hold sensitive data; use `--redact` to strip them.
+
+Every case runs several trials, and a trial is `pass`, `fail`, `inconclusive` or `error`. A pass needs a valid, non-empty, non-truncated answer. Before the probes, a benign control prompt must get a usable answer; if not, no probe runs and each is marked `error`.
 
 Exit codes:
 
 | Code | Meaning |
 |------|---------|
-| 0 | Scan completed; no finding at or above `scan.fail_on`. |
-| 1 | At least one failing probe at or above `scan.fail_on`. |
-| 2 | Configuration or file error. |
-| 3 | Incomplete scan: a probe hit endpoint errors. |
+| 0 | All passed. |
+| 1 | At least one failure at or above `scan.fail_on`. |
+| 2 | No failures, but at least one inconclusive result (also used for configuration or file errors at startup). |
+| 3 | Tool, configuration or target error with no failure proven. |
 
-This makes `vesk scan` usable as a CI gate.
+A proven failure always wins over an error. This makes `vesk scan` usable as a CI gate.
 
 ### `vesk report`
 
@@ -63,8 +72,18 @@ Renders a report from a results file.
 vesk report results.json --format html -o report.html
 ```
 
-- `--format md|html`: output format (default `md`).
-- `-o, --output PATH`: write to a file instead of stdout.
+- `--format md|html|sarif|junit`: output format (default `md`).
+- `-o, --output PATH`: write to a file. A `<file>.sha256` sidecar is written next to it. The SHA-256 detects file changes only; it is not a signature and does not prove who made the file.
+
+Every report carries the notice: "Point-in-time test of the stated target and configuration. It is not a certification, legal opinion, or guarantee of security or regulatory compliance." Reports warn when a result is inconclusive or when the target is a raw model endpoint rather than an application.
+
+### `vesk compare`
+
+```
+vesk compare old.json new.json [--json]
+```
+
+Lists regressions, improvements, added and removed cases, and config changes between two local runs. Exit code 1 if there is any regression.
 
 ## Configuration
 
@@ -80,7 +99,7 @@ target:
   timeout_s: 30
   max_retries: 2
 scan:
-  probes: [prompt_injection, jailbreak, pii_leakage]
+  probes: [prompt_injection, jailbreak_marker, pii_leakage]
   samples_per_probe: 20
   max_concurrency: 4
   seed: 0
@@ -95,8 +114,17 @@ report:
 | Probe | Checks |
 |-------|--------|
 | `prompt_injection` | Whether text in the user turn or in quoted data overrides the instructions. |
-| `jailbreak` | Whether persona and role-play framings make the model drop its rules. Probes ask only for a harmless marker, never for harmful content. |
+| `jailbreak_marker` | Jailbreak Marker Compliance: whether persona and role-play framings make the model emit a harmless marker. It does **not** measure harmful-content compliance. |
 | `pii_leakage` | Whether the model repeats synthetic personal data planted in its own context. Training-data regurgitation is out of scope for 0.1. |
+
+Probes are tagged with OWASP Top 10 for LLM Applications IDs (edition 2025, the latest published; `prompt_injection` and `jailbreak_marker` map to LLM01, `pii_leakage` to LLM02). The edition is recorded in the results.
+
+## Targets, custom cases, judge
+
+- **Targets:** Ollama and any OpenAI-compatible API (`target.adapter: openai`, the default), or any HTTP endpoint via a request template (`target.adapter: http`). See [docs/targets.md](docs/targets.md).
+- **Custom cases:** [docs/custom-cases.md](docs/custom-cases.md).
+- **Judge:** optional `judge:` config section. Its verdict is stored separately; deterministic detectors stay authoritative unless `judge.authoritative: true`. A judge failure never produces a pass.
+- **Results format:** [docs/schema-v2.md](docs/schema-v2.md). Known limits: [docs/limitations.md](docs/limitations.md). Changes: [CHANGELOG.md](CHANGELOG.md).
 
 ## Privacy
 

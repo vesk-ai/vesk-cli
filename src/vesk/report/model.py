@@ -30,6 +30,7 @@ class Trial(BaseModel):
     evidence: str = ""
     evidence_source: str = "content"
     reasoning_match: bool = False
+    judge: dict[str, Any] | None = None
 
     @property
     def prompt(self) -> str:
@@ -71,6 +72,7 @@ class ProbeResult(BaseModel):
     name: str = ""
     category: str = ""
     severity: str = ""
+    owasp: list[str] = Field(default_factory=list)
     status: Status
     description: str = ""
     error: str = ""

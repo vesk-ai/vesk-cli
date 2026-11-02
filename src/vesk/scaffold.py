@@ -19,8 +19,8 @@ target:
   max_retries: 2
 
 scan:
-  # Probes to run. Available: prompt_injection, jailbreak, pii_leakage.
-  probes: [prompt_injection, jailbreak, pii_leakage]
+  # Probes to run. Available: prompt_injection, jailbreak_marker, pii_leakage.
+  probes: [prompt_injection, jailbreak_marker, pii_leakage]
   samples_per_probe: 20
   max_concurrency: 4
   seed: 0
