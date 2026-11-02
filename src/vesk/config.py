@@ -44,7 +44,7 @@ class JudgeConfig(_Strict):
 
 
 class TargetConfig(_Strict):
-    adapter: Literal["openai", "http"] = "openai"
+    adapter: str = "openai"  # a key of vesk.plugins.TARGETS
     http: HttpAdapterConfig | None = None
     type: Literal["model_endpoint", "application"] = "model_endpoint"
     base_url: str

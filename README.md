@@ -123,6 +123,7 @@ Probes are tagged with OWASP Top 10 for LLM Applications IDs (edition 2025, the 
 
 - **Targets:** Ollama and any OpenAI-compatible API (`target.adapter: openai`, the default), or any HTTP endpoint via a request template (`target.adapter: http`). See [docs/targets.md](docs/targets.md).
 - **Custom cases:** [docs/custom-cases.md](docs/custom-cases.md).
+- **Plugins:** extension points for suites, detectors, target adapters and reporters: [docs/plugins.md](docs/plugins.md).
 - **Judge:** optional `judge:` config section. Its verdict is stored separately; deterministic detectors stay authoritative unless `judge.authoritative: true`. A judge failure never produces a pass.
 - **Results format:** [docs/schema-v2.md](docs/schema-v2.md). Known limits: [docs/limitations.md](docs/limitations.md). Changes: [CHANGELOG.md](CHANGELOG.md).
 

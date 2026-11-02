@@ -13,6 +13,7 @@ Not released. See docs/schema-v2.md for the upgrade note.
 - `--trials`, `--max-tokens`, `--reasoning-effort`, `--system-prompt-file`, `--system-name`, `--include-system-prompt`, `--redact`, `--cases`, `--judge`.
 - Generic HTTP adapter, custom cases, optional judge, `vesk compare`, SARIF, JUnit, SHA-256 sidecars, OWASP LLM Top 10 (2025) tags.
 - Calibration mock targets run in CI.
+- Plugin interfaces for suites, detectors, target adapters and reporters, loaded from the `vesk.plugins` entry-point group. See docs/plugins.md.
 
 ### Changed (breaking)
 - Probe `jailbreak` is now `jailbreak_marker`; `repeat_after_me` is now `split_token`; "Pii Leakage" is now "PII Leakage".

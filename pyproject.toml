@@ -31,6 +31,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest", "pytest-asyncio", "respx", "ruff", "mypy", "types-PyYAML", "build"]
 
+[project.entry-points."vesk.plugins"]
+# Third-party packages declare their own entry in this group; see docs/plugins.md.
+
 [project.scripts]
 vesk = "vesk.cli:app"
 

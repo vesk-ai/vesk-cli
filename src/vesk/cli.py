@@ -93,9 +93,11 @@ def scan(
 
     from vesk.client import ChatClient
     from vesk.config import ConfigError, load_config
+    from vesk.plugins import build_target, load_plugins
     from vesk.probes.custom import CustomCaseError, load_custom_probe
     from vesk.runner import RunOptions, run_scan, select_probes
 
+    load_plugins(lambda m: typer.echo(f"vesk scan: {m}", err=True))
     try:
         cfg = load_config(config)
         source = "config" if cfg.target.system_prompt else "default_baseline"
@@ -126,31 +128,7 @@ def scan(
         raise typer.Exit(2) from e
 
     async def _go():
-        if cfg.target.adapter == "http":
-            from vesk.http_adapter import HttpClient
-
-            h = cfg.target.http
-            client = HttpClient(
-                cfg.target.base_url,
-                h.request_template,
-                h.response_path,
-                reasoning_path=h.reasoning_path,
-                method=h.method,
-                headers=h.headers,
-                api_key=api_key,
-                timeout_s=cfg.target.timeout_s,
-                max_retries=cfg.target.max_retries,
-            )
-        else:
-            client = ChatClient(
-                cfg.target.base_url,
-                cfg.target.model,
-                api_key=api_key,
-                timeout_s=cfg.target.timeout_s,
-                max_retries=cfg.target.max_retries,
-                max_tokens=max_tokens,
-                reasoning_effort=reasoning_effort,
-            )
+        client = build_target(cfg, api_key, max_tokens, reasoning_effort)
         judge_client = (
             ChatClient(
                 cfg.judge.base_url,
@@ -213,8 +191,10 @@ def report(
     output: Path | None = typer.Option(None, "-o", "--output", help="Output file."),
 ) -> None:
     """Render a report from a results JSON file."""
+    from vesk.plugins import load_plugins
     from vesk.report.render import ReportError, load_results, render
 
+    load_plugins(lambda m: typer.echo(f"vesk report: {m}", err=True))
     try:
         text = render(load_results(results), fmt)
     except ReportError as e:
