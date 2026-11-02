@@ -66,4 +66,15 @@ def report(
     output: Path | None = typer.Option(None, "-o", "--output", help="Output file."),
 ) -> None:
     """Render a report from a results JSON file."""
-    _not_implemented("report")
+    from vesk.report.render import ReportError, load_results, render
+
+    try:
+        text = render(load_results(results), fmt)
+    except ReportError as e:
+        typer.echo(f"vesk report: {e}", err=True)
+        raise typer.Exit(1) from e
+    if output is None:
+        typer.echo(text, nl=False)
+    else:
+        output.write_text(text, encoding="utf-8")
+        typer.echo(f"wrote {output}", err=True)

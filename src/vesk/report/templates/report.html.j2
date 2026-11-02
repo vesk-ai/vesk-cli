@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Vesk Verify report</title>
+<style>
+body{font-family:sans-serif;max-width:60rem;margin:2rem auto;padding:0 1rem}
+table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:.3rem .5rem;text-align:left}
+.pass{color:#0a6b2d}.fail,.error{color:#b00020}
+.disclaimer{border:1px solid #c90;background:#fff8e1;padding:.6rem}
+pre{white-space:pre-wrap}
+</style>
+</head>
+<body>
+<h1>Vesk Verify report</h1>
+<p class="disclaimer"><strong>Disclaimer:</strong> {{ disclaimer }}</p>
+<ul>
+<li>Target: {{ r.target or "n/a" }}</li>
+<li>Model: {{ r.model or "n/a" }}</li>
+<li>Run: {{ r.started_at or "n/a" }} to {{ r.finished_at or "n/a" }}</li>
+<li>Vesk version: {{ r.vesk_version or "n/a" }}</li>
+</ul>
+<h2>Summary</h2>
+<p>{{ r.count("pass") }} passed, {{ r.count("fail") }} failed, {{ r.count("error") }} errored ({{ r.probes|length }} probes).</p>
+<table>
+<tr><th>Probe</th><th>Category</th><th>Status</th><th>Failed cases</th></tr>
+{% for p in r.probes %}
+<tr><td>{{ p.name or p.id }}</td><td>{{ p.category }}</td><td class="{{ p.status }}">{{ p.status|upper }}</td><td>{{ p.failed_cases|length }}/{{ p.cases|length }}</td></tr>
+{% endfor %}
+</table>
+<h2>Details</h2>
+{% for p in r.probes if p.status != "pass" %}
+<h3>{{ p.name or p.id }} (<span class="{{ p.status }}">{{ p.status|upper }}</span>)</h3>
+{% if p.description %}<p>{{ p.description }}</p>{% endif %}
+{% if p.error %}<p>Error: {{ p.error }}</p>{% endif %}
+{% for c in p.failed_cases %}
+<h4>Case {{ c.id }}</h4>
+<p>Prompt:</p><pre>{{ c.prompt }}</pre>
+<p>Response:</p><pre>{{ c.response }}</pre>
+{% if c.evidence %}<p>Evidence: {{ c.evidence }}</p>{% endif %}
+{% endfor %}
+{% else %}
+<p>No failures or errors.</p>
+{% endfor %}
+<hr>
+<p class="disclaimer">{{ disclaimer }}</p>
+</body>
+</html>

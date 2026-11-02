@@ -1,0 +1,48 @@
+# Vesk Verify report
+
+> **Disclaimer:** {{ disclaimer }}
+
+- Target: {{ r.target or "n/a" }}
+- Model: {{ r.model or "n/a" }}
+- Run: {{ r.started_at or "n/a" }} to {{ r.finished_at or "n/a" }}
+- Vesk version: {{ r.vesk_version or "n/a" }}
+
+## Summary
+
+{{ r.count("pass") }} passed, {{ r.count("fail") }} failed, {{ r.count("error") }} errored ({{ r.probes|length }} probes).
+
+| Probe | Category | Status | Failed cases |
+|---|---|---|---|
+{% for p in r.probes %}
+| {{ (p.name or p.id)|replace("|", "\\|") }} | {{ p.category|replace("|", "\\|") }} | {{ p.status|upper }} | {{ p.failed_cases|length }}/{{ p.cases|length }} |
+{% endfor %}
+
+## Details
+{% for p in r.probes if p.status != "pass" %}
+
+### {{ p.name or p.id }} ({{ p.status|upper }})
+{% if p.description %}
+
+{{ p.description }}
+{% endif %}
+{% if p.error %}
+
+Error: {{ p.error }}
+{% endif %}
+{% for c in p.failed_cases %}
+
+- Case `{{ c.id }}`
+  - Prompt: `{{ c.prompt|replace("`", "'")|replace("\n", " ") }}`
+  - Response: `{{ c.response|replace("`", "'")|replace("\n", " ") }}`
+{% if c.evidence %}
+  - Evidence: {{ c.evidence|replace("\n", " ") }}
+{% endif %}
+{% endfor %}
+{% else %}
+
+No failures or errors.
+{% endfor %}
+
+---
+
+{{ disclaimer }}
