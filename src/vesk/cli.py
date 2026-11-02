@@ -5,6 +5,7 @@ from pathlib import Path
 import typer
 
 from vesk import __version__
+from vesk.scaffold import write_starter_config
 
 app = typer.Typer(
     name="vesk",
@@ -40,7 +41,12 @@ def init(
     force: bool = typer.Option(False, "--force", help="Overwrite an existing file."),
 ) -> None:
     """Write a commented starter vesk.yaml."""
-    _not_implemented("init")
+    try:
+        written = write_starter_config(path, force=force)
+    except OSError as e:
+        typer.echo(f"vesk init: {e}", err=True)
+        raise typer.Exit(2) from e
+    typer.echo(f"Wrote {written}. Set api_key_env, then run `vesk scan`.")
 
 
 @app.command()

@@ -20,4 +20,4 @@ def test_version():
 
 
 def test_stub_commands_exit_2():
-    assert runner.invoke(app, ["init"]).exit_code == 2
+    assert runner.invoke(app, ["scan"]).exit_code == 2
