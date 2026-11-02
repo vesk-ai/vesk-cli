@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased (hardening/v2-schema)
+## 0.2.0 - 2026-11-02
 
-Not released. See docs/schema-v2.md for the upgrade note.
+See docs/schema-v2.md for the upgrade note.
 
 ### Fixed
 - Empty, truncated or errored responses could be reported as passes. A pass now needs positive evidence. Root cause: the client discarded `reasoning`/`finish_reason`, and detectors only fail on a bad string, so empty text never failed (thinking models returned empty `content` at `max_tokens=256`).
