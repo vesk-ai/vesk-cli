@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any
 
 import httpx
 
@@ -12,6 +16,20 @@ from vesk import __version__
 
 class EndpointError(Exception):
     """The target endpoint could not produce a usable answer."""
+
+
+@dataclass
+class Completion:
+    """Everything the endpoint returned for one request, kept for the evidence record."""
+
+    content: str
+    reasoning: str = ""
+    finish_reason: str | None = None
+    http_status: int = 200
+    usage: dict[str, Any] = field(default_factory=dict)
+    latency_s: float = 0.0
+    started_at: str = ""
+    request: dict[str, Any] = field(default_factory=dict)
 
 
 Sleep = Callable[[float], Awaitable[None]]
@@ -26,6 +44,8 @@ class ChatClient:
         timeout_s: float = 30,
         max_retries: int = 2,
         max_tokens: int = 256,
+        reasoning_effort: str | None = None,
+        temperature: float = 0,
         transport: httpx.AsyncBaseTransport | None = None,
         sleep: Sleep = asyncio.sleep,
     ) -> None:
@@ -41,18 +61,31 @@ class ChatClient:
         self._model = model
         self._retries = max_retries
         self._max_tokens = max_tokens
+        self._reasoning_effort = reasoning_effort
+        self._temperature = temperature
         self._sleep = sleep
 
     async def aclose(self) -> None:
         await self._http.aclose()
 
-    async def complete(self, messages: list[dict[str, str]]) -> str:
-        payload = {
-            "model": self._model,
-            "messages": messages,
-            "temperature": 0,
+    @property
+    def generation_params(self) -> dict[str, Any]:
+        """The parameters actually sent with every request."""
+        params: dict[str, Any] = {
+            "temperature": self._temperature,
             "max_tokens": self._max_tokens,
         }
+        if self._reasoning_effort:
+            params["reasoning_effort"] = self._reasoning_effort
+        return params
+
+    async def complete(self, messages: list[dict[str, str]]) -> str:
+        return (await self.complete_detailed(messages)).content
+
+    async def complete_detailed(self, messages: list[dict[str, str]]) -> Completion:
+        payload = {"model": self._model, "messages": messages, **self.generation_params}
+        started_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        t0 = time.monotonic()
         last = "no attempt made"
         for attempt in range(self._retries + 1):
             if attempt:
@@ -68,13 +101,31 @@ class ChatClient:
             if resp.status_code >= 400:
                 # Client errors (bad key, bad model) will not fix themselves; do not retry.
                 raise EndpointError(f"HTTP {resp.status_code} from endpoint")
-            return _extract_text(resp)
+            return _parse(resp, payload, started_at, time.monotonic() - t0)
         raise EndpointError(f"endpoint unavailable after {self._retries + 1} attempts ({last})")
 
 
-def _extract_text(resp: httpx.Response) -> str:
+def _parse(
+    resp: httpx.Response, request: dict[str, Any], started_at: str, latency_s: float
+) -> Completion:
     try:
-        content = resp.json()["choices"][0]["message"]["content"]
+        body = resp.json()
+        choice = body["choices"][0]
+        message = choice["message"]
+        content = message["content"]
     except (ValueError, KeyError, IndexError, TypeError):
         raise EndpointError("response is not an OpenAI-style chat completion") from None
-    return content if isinstance(content, str) else ""
+    # Ollama's /v1 uses "reasoning"; other servers use "reasoning_content".
+    reasoning = message.get("reasoning") or message.get("reasoning_content") or ""
+    usage = body.get("usage")
+    finish = choice.get("finish_reason")
+    return Completion(
+        content=content if isinstance(content, str) else "",
+        reasoning=reasoning if isinstance(reasoning, str) else "",
+        finish_reason=finish if isinstance(finish, str) else None,
+        http_status=resp.status_code,
+        usage=usage if isinstance(usage, dict) else {},
+        latency_s=round(latency_s, 3),
+        started_at=started_at,
+        request=request,
+    )

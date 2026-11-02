@@ -8,6 +8,7 @@ import pytest
 import respx
 from typer.testing import CliRunner
 
+from mocks import secure, vulnerable
 from vesk.cli import app
 from vesk.report.model import Results
 
@@ -16,21 +17,7 @@ URL = "https://llm.test/v1/chat/completions"
 MARKER = re.compile(r"(VESK-CANARY|UNLOCKED)-[0-9A-F]{10}")
 
 
-def vulnerable(request: httpx.Request) -> httpx.Response:
-    """Obeys any instruction and repeats everything in its context."""
-    msgs = json.loads(request.content)["messages"]
-    text = " ".join(m["content"] for m in msgs)
-    m = MARKER.search(text)
-    reply = (m.group(0) + " ") if m else ""
-    return httpx.Response(
-        200, json={"choices": [{"message": {"content": reply + msgs[0]["content"]}}]}
-    )
-
-
-def hardened(request: httpx.Request) -> httpx.Response:
-    return httpx.Response(
-        200, json={"choices": [{"message": {"content": "Sorry, I can't help with that."}}]}
-    )
+hardened = secure
 
 
 @pytest.fixture
@@ -40,7 +27,7 @@ def cfg(tmp_path, monkeypatch):
     p.write_text(
         "target:\n  base_url: https://llm.test/v1\n  model: m\n"
         "  api_key_env: VESK_TEST_KEY\n  max_retries: 0\n"
-        "scan:\n  samples_per_probe: 4\n  seed: 7\n"
+        "scan:\n  samples_per_probe: 4\n  trials: 2\n  seed: 7\n"
         "report:\n  system_name: Test bot\n"
     )
     return p
@@ -98,9 +85,9 @@ def test_planted_pii_is_masked_in_results(cfg, tmp_path):
 @respx.mock
 def test_probe_selection(cfg, tmp_path):
     respx.post(URL).mock(side_effect=hardened)
-    r, out = scan(cfg, tmp_path, "--probe", "jailbreak")
+    r, out = scan(cfg, tmp_path, "--probe", "jailbreak_marker")
     assert r.exit_code == 0
-    assert [p["id"] for p in json.loads(out.read_text())["probes"]] == ["jailbreak"]
+    assert [p["id"] for p in json.loads(out.read_text())["probes"]] == ["jailbreak_marker"]
 
 
 @respx.mock
@@ -126,7 +113,7 @@ def test_progress_shows_status_without_sensitive_data(cfg, tmp_path):
     r, out = scan(cfg, tmp_path)
     assert "Scanning llm.test (model m) with 3 probe(s)" in r.output
     assert "[1/3]" in r.output and "[3/3]" in r.output
-    assert "4/4 requests" in r.output
+    assert "8/8 requests" in r.output
     assert "secret-key" not in r.output
     assert "/v1" not in r.output.split("Scanning", 1)[1].splitlines()[0]
     assert not MARKER.search(r.output)
@@ -135,7 +122,7 @@ def test_progress_shows_status_without_sensitive_data(cfg, tmp_path):
 @respx.mock
 def test_sends_bearer_key(cfg, tmp_path):
     route = respx.post(URL).mock(side_effect=hardened)
-    scan(cfg, tmp_path, "--probe", "jailbreak")
+    scan(cfg, tmp_path, "--probe", "jailbreak_marker")
     assert route.calls[0].request.headers["authorization"] == "Bearer secret-key"
 
 
@@ -174,3 +161,37 @@ def test_env_file_missing_exits_2(cfg, tmp_path, monkeypatch):
     r, _ = scan(cfg, tmp_path, "--env-file", str(tmp_path / "nope.env"))
     assert r.exit_code == 2
     assert "env file not found" in r.output
+
+
+def _reply(content, finish="stop", reasoning=""):
+    msg = {"content": content}
+    if reasoning:
+        msg["reasoning"] = reasoning
+    return httpx.Response(200, json={"choices": [{"message": msg, "finish_reason": finish}]})
+
+
+@respx.mock
+def test_empty_content_is_never_a_pass(cfg, tmp_path):
+    """v0.1.5 root cause: a thinking model burned max_tokens on reasoning, content was ''."""
+    respx.post(URL).mock(return_value=_reply("", "length", reasoning="thinking..."))
+    r, out = scan(cfg, tmp_path, "--max-tokens", "64")
+    assert r.exit_code == 3
+    data = json.loads(out.read_text())
+    assert data["preflight"]["status"] == "error"
+    assert data["generation_params"]["max_tokens"] == 64
+    assert all(p["status"] == "error" and not p["cases"] for p in data["probes"])
+    assert not any(p["status"] == "pass" for p in data["probes"])
+
+
+@respx.mock
+def test_truncated_mid_run_is_inconclusive(cfg, tmp_path):
+    calls = {"n": 0}
+
+    def side(request):
+        calls["n"] += 1
+        return _reply("ok") if calls["n"] == 1 else _reply("partial", "length")
+
+    respx.post(URL).mock(side_effect=side)
+    r, out = scan(cfg, tmp_path)
+    assert r.exit_code == 2
+    assert {p["status"] for p in json.loads(out.read_text())["probes"]} == {"inconclusive"}

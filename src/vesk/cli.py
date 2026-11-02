@@ -54,6 +54,33 @@ def scan(
     config: Path = typer.Option(Path("vesk.yaml"), "-c", "--config", help="Config file."),
     probe: list[str] | None = typer.Option(None, "--probe", help="Probe to run (repeatable)."),
     out: Path = typer.Option(Path("results.json"), "--out", help="Results JSON path."),
+    max_tokens: int = typer.Option(256, "--max-tokens", min=1, help="Token limit per request."),
+    reasoning_effort: str | None = typer.Option(
+        None, "--reasoning-effort", help="Sent as reasoning_effort (e.g. low, medium, high)."
+    ),
+    trials: int | None = typer.Option(
+        None, "--trials", min=1, help="Trials per case (default 5, or scan.trials in the config)."
+    ),
+    system_prompt_file: Path | None = typer.Option(
+        None, "--system-prompt-file", help="Text file with the system prompt to test under."
+    ),
+    system_name: str | None = typer.Option(
+        None, "--system-name", help="Name of the system under test, shown in the report."
+    ),
+    include_system_prompt: bool = typer.Option(
+        False, "--include-system-prompt", help="Store the system prompt text in the results."
+    ),
+    redact: bool = typer.Option(
+        False, "--redact", help="Replace prompts, responses and reasoning with length markers."
+    ),
+    cases: list[Path] | None = typer.Option(
+        None,
+        "--cases",
+        help="Custom case file, YAML or JSON (repeatable). See docs/custom-cases.md.",
+    ),
+    judge: bool = typer.Option(
+        False, "--judge", help="Also ask the judge from the config (sends responses to it)."
+    ),
     env_file: Path | None = typer.Option(
         None,
         "--env-file",
@@ -66,29 +93,78 @@ def scan(
 
     from vesk.client import ChatClient
     from vesk.config import ConfigError, load_config
-    from vesk.runner import run_scan, select_probes
+    from vesk.plugins import build_target, load_plugins
+    from vesk.probes.custom import CustomCaseError, load_custom_probe
+    from vesk.runner import RunOptions, run_scan, select_probes
 
+    load_plugins(lambda m: typer.echo(f"vesk scan: {m}", err=True))
     try:
         cfg = load_config(config)
+        source = "config" if cfg.target.system_prompt else "default_baseline"
+        if system_prompt_file is not None:
+            try:
+                text = system_prompt_file.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError) as e:
+                raise ConfigError(
+                    f"cannot read system prompt file {system_prompt_file}: {e}"
+                ) from e
+            if not text.strip():
+                raise ConfigError(f"system prompt file {system_prompt_file} is empty")
+            cfg.target.system_prompt = text
+            source = "file"
+        if trials is not None:
+            cfg.scan.trials = trials
+        if system_name is not None:
+            cfg.report.system_name = system_name
         probes = select_probes(cfg, probe)
+        for cf in [*cfg.custom_cases, *(str(c) for c in cases or [])]:
+            probes.append(load_custom_probe(Path(cf)))
         api_key = cfg.api_key(env_file)
-    except ConfigError as e:
+        if judge and cfg.judge is None:
+            raise ConfigError("--judge needs a `judge:` section in the config")
+        judge_key = cfg.judge_api_key(env_file) if judge else None
+    except (ConfigError, CustomCaseError) as e:
         typer.echo(f"vesk scan: {e}", err=True)
         raise typer.Exit(2) from e
 
     async def _go():
-        client = ChatClient(
-            cfg.target.base_url,
-            cfg.target.model,
-            api_key=api_key,
-            timeout_s=cfg.target.timeout_s,
-            max_retries=cfg.target.max_retries,
+        client = build_target(cfg, api_key, max_tokens, reasoning_effort)
+        judge_client = (
+            ChatClient(
+                cfg.judge.base_url,
+                cfg.judge.model,
+                api_key=judge_key,
+                max_tokens=cfg.judge.max_tokens,
+            )
+            if judge and cfg.judge
+            else None
         )
         try:
-            return await run_scan(cfg, probes, client, progress=lambda m: typer.echo(m, err=True))
+            return await run_scan(
+                cfg,
+                probes,
+                client,
+                progress=lambda m: typer.echo(m, err=True),
+                options=RunOptions(
+                    system_prompt_source=source,
+                    include_system_prompt=include_system_prompt,
+                    redact=redact,
+                    judge_authoritative=bool(judge and cfg.judge and cfg.judge.authoritative),
+                    secrets=[k for k in (api_key, judge_key) if k],
+                ),
+                judge_client=judge_client,
+            )
         finally:
             await client.aclose()
+            if judge_client is not None:
+                await judge_client.aclose()
 
+    if not redact:
+        typer.echo(
+            "Note: results.json contains full prompts and model responses and may hold "
+            "sensitive data. Use --redact to strip them.",
+            err=True,
+        )
     results = asyncio.run(_go())
     try:
         results.write(out)
@@ -97,8 +173,10 @@ def scan(
         raise typer.Exit(2) from e
 
     for p in results.probes:
-        failed = sum(1 for c in p.cases if not c.passed)
+        failed = sum(1 for c in p.cases if c.status == "fail")
         line = f"{p.id}: {p.status} ({failed}/{len(p.cases)} cases failed)"
+        if p.status == "inconclusive":
+            line += " (inconclusive: not a pass)"
         typer.echo(line + (f" [{p.error}]" if p.error else ""))
     typer.echo(f"wrote {out}")
     code = results.exit_code(cfg.scan.fail_on)
@@ -109,12 +187,14 @@ def scan(
 @app.command()
 def report(
     results: Path = typer.Argument(Path("results.json"), help="Results JSON from `vesk scan`."),
-    fmt: str = typer.Option("md", "--format", help="md or html."),
+    fmt: str = typer.Option("md", "--format", help="md, html, sarif or junit."),
     output: Path | None = typer.Option(None, "-o", "--output", help="Output file."),
 ) -> None:
     """Render a report from a results JSON file."""
+    from vesk.plugins import load_plugins
     from vesk.report.render import ReportError, load_results, render
 
+    load_plugins(lambda m: typer.echo(f"vesk report: {m}", err=True))
     try:
         text = render(load_results(results), fmt)
     except ReportError as e:
@@ -123,5 +203,34 @@ def report(
     if output is None:
         typer.echo(text, nl=False)
     else:
+        from vesk.report.machine import write_sidecar
+
         output.write_text(text, encoding="utf-8")
-        typer.echo(f"wrote {output}", err=True)
+        side = write_sidecar(output)
+        typer.echo(
+            f"wrote {output} and {side.name} (SHA-256 detects file changes; not a signature)",
+            err=True,
+        )
+
+
+@app.command()
+def compare(
+    old: Path = typer.Argument(..., help="Earlier results JSON."),
+    new: Path = typer.Argument(..., help="Later results JSON."),
+    as_json: bool = typer.Option(False, "--json", help="Print JSON instead of text."),
+) -> None:
+    """Compare two local runs: regressions, improvements and config changes."""
+    import json
+
+    from vesk.compare import compare as do_compare
+    from vesk.compare import render_text
+    from vesk.report.render import ReportError, load_results
+
+    try:
+        d = do_compare(load_results(old), load_results(new))
+    except ReportError as e:
+        typer.echo(f"vesk compare: {e}", err=True)
+        raise typer.Exit(2) from e
+    typer.echo(json.dumps(d, indent=2) if as_json else render_text(d), nl=as_json)
+    if d["regressions"]:
+        raise typer.Exit(1)

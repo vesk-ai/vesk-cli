@@ -8,15 +8,14 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 from pydantic import ValidationError
 
+from vesk.plugins import REPORTERS, register_reporter
 from vesk.report.model import Results
 
-DISCLAIMER = (
-    "This report is generated automatically from automated test results. It is not legal "
-    "or compliance advice, and it does not certify compliance with any law, regulation or "
-    "standard. Consult qualified professionals before relying on it."
+NOTICE = (
+    "Point-in-time test of the stated target and configuration. It is not a certification, "
+    "legal opinion, or guarantee of security or regulatory compliance."
 )
-
-FORMATS = ("md", "html")
+DISCLAIMER = NOTICE  # name kept for callers of v0.1.x
 
 
 class ReportError(Exception):
@@ -46,7 +45,39 @@ def _env(fmt: str) -> Environment:
     )
 
 
+class _TemplateReporter:
+    def __init__(self, fmt: str) -> None:
+        self.format = fmt
+
+    def render(self, results: Results, notice: str) -> str:
+        return (
+            _env(self.format)
+            .get_template(f"report.{self.format}.j2")
+            .render(r=results, notice=notice, disclaimer=notice)
+        )
+
+
+class _MachineReporter:
+    def __init__(self, fmt: str) -> None:
+        self.format = fmt
+
+    def render(self, results: Results, notice: str) -> str:
+        from vesk.report import machine
+
+        return (machine.to_sarif if self.format == "sarif" else machine.to_junit)(results, notice)
+
+
+for _r in (
+    _TemplateReporter("md"),
+    _TemplateReporter("html"),
+    _MachineReporter("sarif"),
+    _MachineReporter("junit"),
+):
+    register_reporter(_r)
+
+
 def render(results: Results, fmt: str = "md") -> str:
-    if fmt not in FORMATS:
-        raise ReportError(f"unknown format {fmt!r}; choose one of: {', '.join(FORMATS)}")
-    return _env(fmt).get_template(f"report.{fmt}.j2").render(r=results, disclaimer=DISCLAIMER)
+    reporter = REPORTERS.get(fmt)
+    if reporter is None:
+        raise ReportError(f"unknown format {fmt!r}; choose one of: {', '.join(REPORTERS)}")
+    return reporter.render(results, NOTICE)

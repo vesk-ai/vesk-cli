@@ -6,26 +6,33 @@
 <style>
 body{font-family:sans-serif;max-width:60rem;margin:2rem auto;padding:0 1rem}
 table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:.3rem .5rem;text-align:left}
-.pass{color:#0a6b2d}.fail,.error{color:#b00020}
-.disclaimer{border:1px solid #c90;background:#fff8e1;padding:.6rem}
+.pass{color:#0a6b2d}.fail,.error{color:#b00020}.inconclusive{color:#8a5a00}
+.notice,.warning{border:1px solid #c90;background:#fff8e1;padding:.6rem}
 pre{white-space:pre-wrap}
 </style>
 </head>
 <body>
 <h1>Vesk Verify report</h1>
-<p class="disclaimer"><strong>Disclaimer:</strong> {{ disclaimer }}</p>
+<p class="notice"><strong>Notice:</strong> {{ notice }}</p>
+{% for w in r.warnings %}
+<p class="warning"><strong>Warning:</strong> {{ w }}</p>
+{% endfor %}
 <ul>
-<li>Target: {{ r.target or "n/a" }}</li>
+<li>System: {{ r.system_name or "n/a" }}</li>
+<li>Target: {{ r.target or "n/a" }} ({{ r.metadata.get("target_type", "n/a") }})</li>
 <li>Model: {{ r.model or "n/a" }}</li>
-<li>Run: {{ r.started_at or "n/a" }} to {{ r.finished_at or "n/a" }}</li>
+<li>Run: {{ r.started_at or "n/a" }} to {{ r.finished_at or "n/a" }}{% if r.run_id %} (run {{ r.run_id }}){% endif %}</li>
 <li>Vesk version: {{ r.vesk_version or "n/a" }}</li>
 </ul>
 <h2>Summary</h2>
-<p>{{ r.count("pass") }} passed, {{ r.count("fail") }} failed, {{ r.count("error") }} errored ({{ r.probes|length }} probes).</p>
+<p>{{ r.count("pass") }} passed, {{ r.count("fail") }} failed, {{ r.count("inconclusive") }} inconclusive, {{ r.count("error") }} errored ({{ r.probes|length }} probes).</p>
+{% if r.summary.get("failure_rate") is not none %}
+<p>Failure rate over {{ r.summary.valid_trials }} valid trials: {{ "%.1f"|format(r.summary.failure_rate * 100) }}%{% if r.summary.get("wilson_95") %} (95% Wilson interval {{ "%.1f"|format(r.summary.wilson_95[0] * 100) }}% to {{ "%.1f"|format(r.summary.wilson_95[1] * 100) }}%){% endif %}. {{ r.summary.get("wilson_note", "") }}</p>
+{% endif %}
 <table>
-<tr><th>Probe</th><th>Category</th><th>Status</th><th>Failed cases</th></tr>
+<tr><th>Probe</th><th>Category</th><th>Status</th><th>Failed cases</th><th>Not passed</th></tr>
 {% for p in r.probes %}
-<tr><td>{{ p.name or p.id }}</td><td>{{ p.category }}</td><td class="{{ p.status }}">{{ p.status|upper }}</td><td>{{ p.failed_cases|length }}/{{ p.cases|length }}</td></tr>
+<tr><td>{{ p.name or p.id }}</td><td>{{ p.category }}</td><td class="{{ p.status }}">{{ p.status|upper }}</td><td>{{ p.failed_cases|length }}/{{ p.cases|length }}</td><td>{{ p.not_passed_cases|length }}</td></tr>
 {% endfor %}
 </table>
 <h2>Details</h2>
@@ -33,16 +40,24 @@ pre{white-space:pre-wrap}
 <h3>{{ p.name or p.id }} (<span class="{{ p.status }}">{{ p.status|upper }}</span>)</h3>
 {% if p.description %}<p>{{ p.description }}</p>{% endif %}
 {% if p.error %}<p>Error: {{ p.error }}</p>{% endif %}
-{% for c in p.failed_cases %}
-<h4>Case {{ c.id }}</h4>
+{% for c in p.not_passed_cases %}
+{% set t = c.shown %}
+<h4>Case {{ c.id }}: <span class="{{ c.status }}">{{ c.status|upper }}</span></h4>
+{% if t %}
+<p>Prompt:</p><pre>{{ t.prompt }}</pre>
+<p>Response:</p><pre>{{ t.response }}</pre>
+{% if t.status_reason %}<p>Reason: {{ t.status_reason }}</p>{% endif %}
+{% if t.evidence %}<p>Evidence: {{ t.evidence }}</p>{% endif %}
+{% else %}
 <p>Prompt:</p><pre>{{ c.prompt }}</pre>
 <p>Response:</p><pre>{{ c.response }}</pre>
 {% if c.evidence %}<p>Evidence: {{ c.evidence }}</p>{% endif %}
+{% endif %}
 {% endfor %}
 {% else %}
-<p>No failures or errors.</p>
+<p>No failures, inconclusive results or errors.</p>
 {% endfor %}
 <hr>
-<p class="disclaimer">{{ disclaimer }}</p>
+<p class="notice">{{ notice }}</p>
 </body>
 </html>
