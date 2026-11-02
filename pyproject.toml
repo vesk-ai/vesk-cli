@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "vesk"
+name = "vesk-cli"
 dynamic = ["version"]
 description = "Vesk Verify: test LLM endpoints and produce compliance-mapped reports."
 readme = "README.md"

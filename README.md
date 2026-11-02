@@ -8,7 +8,7 @@ PII-leakage probes, then renders a report mapped to EU AI Act, DPDP and NIST AI 
 ## Install
 
 ```
-pip install vesk
+pip install vesk-cli
 ```
 
 Requires Python 3.10 or newer.
