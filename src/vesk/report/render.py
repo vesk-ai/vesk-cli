@@ -18,7 +18,6 @@ NOTICE = (
 DISCLAIMER = NOTICE  # name kept for callers of v0.1.x
 
 
-
 class ReportError(Exception):
     """Results file could not be read or rendered."""
 
@@ -68,8 +67,12 @@ class _MachineReporter:
         return (machine.to_sarif if self.format == "sarif" else machine.to_junit)(results, notice)
 
 
-for _r in (_TemplateReporter("md"), _TemplateReporter("html"), _MachineReporter("sarif"),
-           _MachineReporter("junit")):
+for _r in (
+    _TemplateReporter("md"),
+    _TemplateReporter("html"),
+    _MachineReporter("sarif"),
+    _MachineReporter("junit"),
+):
     register_reporter(_r)
 
 
