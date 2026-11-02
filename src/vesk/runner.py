@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Callable
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, Field
 
@@ -78,17 +80,35 @@ def _excerpt(text: str) -> str:
     return text if len(text) <= RESPONSE_LIMIT else text[:RESPONSE_LIMIT] + "…"
 
 
-async def _run_probe(probe: Probe, cfg: Config, client: ChatClient, sem: asyncio.Semaphore):
+def display_host(base_url: str) -> str:
+    """Host[:port] only: drops credentials, path and query so nothing sensitive is echoed."""
+    return urlsplit(base_url).netloc.rpartition("@")[2] or "target"
+
+
+async def _run_probe(
+    probe: Probe,
+    cfg: Config,
+    client: ChatClient,
+    sem: asyncio.Semaphore,
+    progress: Progress | None = None,
+):
     cases = probe.cases(cfg.target.system_prompt, cfg.scan.samples_per_probe, cfg.scan.seed)
     errors: list[str] = []
+    done = 0
+    step = max(1, len(cases) // 4)
 
     async def one(case) -> CaseResult | None:
+        nonlocal done
         async with sem:
             try:
                 response = await client.complete(case.messages)
             except EndpointError as e:
                 errors.append(str(e))
                 return None
+            finally:
+                done += 1
+                if progress and (done == len(cases) or done % step == 0):
+                    progress(f"  {probe.name}: {done}/{len(cases)} requests")
         verdict = probe.evaluate(case, response)
         return CaseResult(
             id=case.id,
@@ -118,12 +138,28 @@ async def _run_probe(probe: Probe, cfg: Config, client: ChatClient, sem: asyncio
     )
 
 
+Progress = Callable[[str], None]
+
+
 async def run_scan(
-    cfg: Config, probes: list[Probe], client: ChatClient
+    cfg: Config, probes: list[Probe], client: ChatClient, progress: Progress | None = None
 ) -> ScanResults:
+    """`progress` receives short status lines: probe names and counts only, never content."""
     started = _now()
     sem = asyncio.Semaphore(cfg.scan.max_concurrency)
-    runs = [await _run_probe(p, cfg, client, sem) for p in probes]
+    if progress:
+        progress(
+            f"Scanning {display_host(cfg.target.base_url)} (model {cfg.target.model}) "
+            f"with {len(probes)} probe(s)"
+        )
+    runs = []
+    for i, p in enumerate(probes, 1):
+        if progress:
+            progress(f"[{i}/{len(probes)}] {p.name}: running")
+        run = await _run_probe(p, cfg, client, sem, progress)
+        if progress:
+            progress(f"[{i}/{len(probes)}] {p.name}: {run.status}")
+        runs.append(run)
     return ScanResults(
         target=cfg.target.base_url,
         model=cfg.target.model,

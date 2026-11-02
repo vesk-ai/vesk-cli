@@ -121,6 +121,18 @@ def test_endpoint_down_exits_3_and_still_writes_results(cfg, tmp_path):
 
 
 @respx.mock
+def test_progress_shows_status_without_sensitive_data(cfg, tmp_path):
+    respx.post(URL).mock(side_effect=vulnerable)
+    r, out = scan(cfg, tmp_path)
+    assert "Scanning llm.test (model m) with 3 probe(s)" in r.output
+    assert "[1/3]" in r.output and "[3/3]" in r.output
+    assert "4/4 requests" in r.output
+    assert "secret-key" not in r.output
+    assert "/v1" not in r.output.split("Scanning", 1)[1].splitlines()[0]
+    assert not MARKER.search(r.output)
+
+
+@respx.mock
 def test_sends_bearer_key(cfg, tmp_path):
     route = respx.post(URL).mock(side_effect=hardened)
     scan(cfg, tmp_path, "--probe", "jailbreak")

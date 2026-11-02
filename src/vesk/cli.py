@@ -85,7 +85,7 @@ def scan(
             max_retries=cfg.target.max_retries,
         )
         try:
-            return await run_scan(cfg, probes, client)
+            return await run_scan(cfg, probes, client, progress=lambda m: typer.echo(m, err=True))
         finally:
             await client.aclose()
 

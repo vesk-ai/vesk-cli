@@ -42,6 +42,8 @@ Runs the configured probes against the target and writes a results JSON file.
 - `--out PATH`: results file (default `results.json`).
 - `--env-file PATH`: optional dotenv-style file (`KEY=VALUE` lines) to read the API key from. Not read unless given; real environment variables win over the file.
 
+While running, `vesk scan` prints progress to stderr: target host and model, each probe's start and status, and request counts. It never prints prompts, responses, API keys, URL paths or credentials; those stay in the results file only (with PII masked).
+
 Exit codes:
 
 | Code | Meaning |
