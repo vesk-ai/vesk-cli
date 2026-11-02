@@ -22,6 +22,8 @@ vesk scan                      # run probes, write results.json
 vesk report results.json -o report.md
 ```
 
+`api_key_env` holds the *name* of an environment variable (e.g. `VESK_API_KEY`), not a file path or the key. vesk does not read `.env` files; export the variable in your shell (or load your `.env` first, e.g. `set -a; . ./.env; set +a`). Omit `api_key_env` if the endpoint needs no key.
+
 ## Commands
 
 ### `vesk init`

@@ -49,6 +49,12 @@ def test_api_key_comes_from_env(tmp_path, monkeypatch):
     assert cfg.api_key() == "abc"
 
 
+def test_api_key_env_must_be_a_variable_name(tmp_path):
+    cfg = load_config(write(tmp_path, MINIMAL + "  api_key_env: .env\n"))
+    with pytest.raises(ConfigError, match="not an environment variable name"):
+        cfg.api_key()
+
+
 def test_select_probes_unknown(tmp_path):
     cfg = load_config(write(tmp_path, MINIMAL))
     with pytest.raises(ConfigError, match="unknown probe"):

@@ -56,9 +56,21 @@ class Config(_Strict):
         name = self.target.api_key_env
         if not name:
             return None
+        if not name.isidentifier():
+            raise ConfigError(
+                f"target.api_key_env is {name!r}, which is not an environment variable name. "
+                "Set it to the NAME of a variable (for example VESK_API_KEY), not a file or "
+                "the key itself, then export that variable: export VESK_API_KEY=<your key>"
+            )
         key = os.environ.get(name)
         if not key:
-            raise ConfigError(f"environment variable {name} (target.api_key_env) is not set")
+            raise ConfigError(
+                f"environment variable {name} is not set or is empty "
+                f"(named by target.api_key_env in your config). "
+                f"Export it in this shell first: export {name}=<your key>. "
+                "vesk does not read .env files. If the endpoint needs no key, "
+                "remove api_key_env from the config."
+            )
         return key
 
 
