@@ -182,3 +182,26 @@ def report(
         output.write_text(text, encoding="utf-8")
         side = write_sidecar(output)
         typer.echo(f"wrote {output} and {side.name} (SHA-256 detects file changes; not a signature)", err=True)
+
+
+@app.command()
+def compare(
+    old: Path = typer.Argument(..., help="Earlier results JSON."),
+    new: Path = typer.Argument(..., help="Later results JSON."),
+    as_json: bool = typer.Option(False, "--json", help="Print JSON instead of text."),
+) -> None:
+    """Compare two local runs: regressions, improvements and config changes."""
+    import json
+
+    from vesk.compare import compare as do_compare
+    from vesk.compare import render_text
+    from vesk.report.render import ReportError, load_results
+
+    try:
+        d = do_compare(load_results(old), load_results(new))
+    except ReportError as e:
+        typer.echo(f"vesk compare: {e}", err=True)
+        raise typer.Exit(2) from e
+    typer.echo(json.dumps(d, indent=2) if as_json else render_text(d), nl=as_json)
+    if d["regressions"]:
+        raise typer.Exit(1)
