@@ -56,7 +56,48 @@ def scan(
     out: Path = typer.Option(Path("results.json"), "--out", help="Results JSON path."),
 ) -> None:
     """Run probes against the target and write a results JSON file."""
-    _not_implemented("scan")
+    import asyncio
+
+    from vesk.client import ChatClient
+    from vesk.config import ConfigError, load_config
+    from vesk.runner import run_scan, select_probes
+
+    try:
+        cfg = load_config(config)
+        probes = select_probes(cfg, probe)
+        api_key = cfg.api_key()
+    except ConfigError as e:
+        typer.echo(f"vesk scan: {e}", err=True)
+        raise typer.Exit(2) from e
+
+    async def _go():
+        client = ChatClient(
+            cfg.target.base_url,
+            cfg.target.model,
+            api_key=api_key,
+            timeout_s=cfg.target.timeout_s,
+            max_retries=cfg.target.max_retries,
+        )
+        try:
+            return await run_scan(cfg, probes, client)
+        finally:
+            await client.aclose()
+
+    results = asyncio.run(_go())
+    try:
+        results.write(out)
+    except OSError as e:
+        typer.echo(f"vesk scan: cannot write {out}: {e}", err=True)
+        raise typer.Exit(2) from e
+
+    for p in results.probes:
+        failed = sum(1 for c in p.cases if not c.passed)
+        line = f"{p.id}: {p.status} ({failed}/{len(p.cases)} cases failed)"
+        typer.echo(line + (f" [{p.error}]" if p.error else ""))
+    typer.echo(f"wrote {out}")
+    code = results.exit_code(cfg.scan.fail_on)
+    if code:
+        raise typer.Exit(code)
 
 
 @app.command()
