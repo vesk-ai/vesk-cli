@@ -206,6 +206,23 @@ def _store_text(probe: Probe, case, text: str, opts: RunOptions) -> str:
     return REDACTED.format(n=len(text)) if opts.redact and text else text
 
 
+PREVIEW_CHARS = 100
+
+
+def _preview(probe: Probe, case, opts: RunOptions) -> str:
+    """One-line excerpt of the prompt sent, for the console. Never the response.
+
+    Uses the probe's own redaction (planted PII is masked) and strips secrets. With
+    --redact the text is withheld entirely.
+    """
+    if opts.redact:
+        return "[prompt withheld: --redact]"
+    text = " ".join(_scrub(probe.redact(case, case.prompt), opts.secrets).split())
+    if len(text) > PREVIEW_CHARS:
+        text = text[: PREVIEW_CHARS - 1] + "…"
+    return f'"{text}"'
+
+
 async def _run_probe(
     probe: Probe,
     cfg: Config,
@@ -222,26 +239,29 @@ async def _run_probe(
         for t in range(trials)
     ]
     total = sum(len(c) for c in by_trial)
-    done = 0
-    step = max(1, total // 4)
+    started = 0
+
+    def say(msg: str) -> None:
+        if progress:
+            progress(msg)
 
     async def one(t: int, case) -> tuple[str, TrialResult]:
-        nonlocal done
+        nonlocal started
         base = dict(index=t, request_messages=_store_messages(probe, case, opts))
         async with sem:
+            started += 1
+            tag = f"  [{started}/{total}]"
+            say(f"{tag} sending {case.id} (trial {t + 1}/{trials}): {_preview(probe, case, opts)}")
             try:
                 comp = await client.complete_detailed(case.messages)
             except EndpointError as e:
+                say(f"{tag} ERROR endpoint_error")
                 return case.id, TrialResult(
                     **base,
                     status="error",
                     status_reason="endpoint_error",
                     error=_scrub(str(e), opts.secrets),
                 )
-            finally:
-                done += 1
-                if progress and (done == total or done % step == 0):
-                    progress(f"  {probe.name}: {done}/{total} requests")
         verdict = probe.evaluate(case, comp.content, comp.reasoning)
         invalid, reason = classify_completion(comp.content, comp.finish_reason)
         if verdict.failed:
@@ -252,6 +272,11 @@ async def _run_probe(
             status, reason = "inconclusive", verdict.reason
         else:
             status, reason = "pass", ""
+        say(
+            f"{tag} {status.upper()}"
+            + (f" ({reason})" if reason else "")
+            + f" {comp.latency_s:.1f}s"
+        )
         judge = None
         if judge_client is not None and comp.content.strip():
             judge = await judge_trial(judge_client, probe.description, case.prompt, comp.content)
@@ -360,7 +385,8 @@ async def run_scan(
     options: RunOptions | None = None,
     judge_client: ChatClient | None = None,
 ) -> ScanResults:
-    """`progress` receives short status lines: probe names and counts only, never content."""
+    """`progress` receives status lines: probe names, and one line per request with a short
+    prompt excerpt (masked, secrets removed) and its verdict. Model responses are never sent."""
     opts = options or RunOptions()
     started = _now()
     sem = asyncio.Semaphore(cfg.scan.max_concurrency)

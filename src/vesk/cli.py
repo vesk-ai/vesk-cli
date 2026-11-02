@@ -81,6 +81,9 @@ def scan(
     judge: bool = typer.Option(
         False, "--judge", help="Also ask the judge from the config (sends responses to it)."
     ),
+    quiet: bool = typer.Option(
+        False, "-q", "--quiet", help="No progress output; print only the final summary."
+    ),
     env_file: Path | None = typer.Option(
         None,
         "--env-file",
@@ -144,7 +147,7 @@ def scan(
                 cfg,
                 probes,
                 client,
-                progress=lambda m: typer.echo(m, err=True),
+                progress=None if quiet else (lambda m: typer.echo(m, err=True)),
                 options=RunOptions(
                     system_prompt_source=source,
                     include_system_prompt=include_system_prompt,

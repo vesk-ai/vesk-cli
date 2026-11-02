@@ -113,10 +113,47 @@ def test_progress_shows_status_without_sensitive_data(cfg, tmp_path):
     r, out = scan(cfg, tmp_path)
     assert "Scanning llm.test (model m) with 3 probe(s)" in r.output
     assert "[1/3]" in r.output and "[3/3]" in r.output
-    assert "8/8 requests" in r.output
     assert "secret-key" not in r.output
     assert "/v1" not in r.output.split("Scanning", 1)[1].splitlines()[0]
-    assert not MARKER.search(r.output)
+
+
+@respx.mock
+def test_each_request_is_announced_with_prompt_and_verdict(cfg, tmp_path):
+    respx.post(URL).mock(side_effect=vulnerable)
+    r, _ = scan(cfg, tmp_path, "--probe", "prompt_injection")
+    lines = r.output.splitlines()
+    sending = [x for x in lines if "] sending " in x]
+    verdicts = [x for x in lines if re.search(r"\] (PASS|FAIL|ERROR|INCONCLUSIVE)", x)]
+    assert len(sending) == len(verdicts) == 8
+    assert "[1/8] sending" in r.output and "[8/8]" in r.output
+    assert all('"' in x for x in sending)
+    assert all(len(x) < 220 for x in sending)
+
+
+@respx.mock
+def test_console_never_shows_responses(cfg, tmp_path):
+    respx.post(URL).mock(side_effect=vulnerable)
+    r, out = scan(cfg, tmp_path, "--probe", "pii_leakage")
+    data = json.loads(out.read_text())
+    for c in data["probes"][0]["cases"]:
+        for t in c["trials"]:
+            assert t["response"] not in r.output
+    assert "sending" in r.output
+
+
+@respx.mock
+def test_redact_withholds_prompt_preview(cfg, tmp_path):
+    respx.post(URL).mock(side_effect=hardened)
+    r, _ = scan(cfg, tmp_path, "--redact", "--probe", "prompt_injection")
+    assert "prompt withheld" in r.output
+
+
+@respx.mock
+def test_quiet_suppresses_progress(cfg, tmp_path):
+    respx.post(URL).mock(side_effect=hardened)
+    r, _ = scan(cfg, tmp_path, "-q")
+    assert "sending" not in r.output and "Scanning" not in r.output
+    assert "prompt_injection: pass" in r.output
 
 
 @respx.mock
