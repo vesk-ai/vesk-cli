@@ -6,9 +6,9 @@ import re
 import httpx
 import pytest
 import respx
-from mocks import secure, vulnerable
 from typer.testing import CliRunner
 
+from mocks import secure, vulnerable
 from vesk.cli import app
 from vesk.report.model import Results
 

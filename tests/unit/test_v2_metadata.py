@@ -1,7 +1,7 @@
 import httpx
 import pytest
-from mocks import secure, vulnerable
 
+from mocks import secure, vulnerable
 from vesk import meta
 from vesk.client import ChatClient
 from vesk.config import Config
@@ -14,8 +14,9 @@ async def scan(handler, options=None, system_prompt=None, probes=("pii_leakage",
     if system_prompt:
         target["system_prompt"] = system_prompt
     cfg = Config.model_validate({"target": target, "scan": {"samples_per_probe": 2, "trials": 2}})
-    client = ChatClient("https://llm.test/v1", "m", max_retries=0,
-                        transport=httpx.MockTransport(handler))
+    client = ChatClient(
+        "https://llm.test/v1", "m", max_retries=0, transport=httpx.MockTransport(handler)
+    )
     try:
         return await run_scan(cfg, [REGISTRY[p]() for p in probes], client, options=options)
     finally:
@@ -56,6 +57,7 @@ async def test_redact_strips_bodies_but_keeps_statuses():
 async def test_secrets_are_scrubbed_from_stored_text():
     def leaky(request):
         from mocks import reply
+
         return reply("my key is sk-live-123")
 
     r = await scan(leaky, RunOptions(secrets=["sk-live-123"]))

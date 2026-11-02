@@ -8,11 +8,20 @@ from vesk.report.model import Results
 
 
 def _r(statuses, model="m", temp=0):
-    return Results.model_validate({
-        "run_id": "r", "model": model, "generation_params": {"temperature": temp},
-        "probes": [{"id": "p", "status": "pass",
-                    "cases": [{"id": k, "status": v} for k, v in statuses.items()]}],
-    })
+    return Results.model_validate(
+        {
+            "run_id": "r",
+            "model": model,
+            "generation_params": {"temperature": temp},
+            "probes": [
+                {
+                    "id": "p",
+                    "status": "pass",
+                    "cases": [{"id": k, "status": v} for k, v in statuses.items()],
+                }
+            ],
+        }
+    )
 
 
 def test_regression_improvement_and_config():

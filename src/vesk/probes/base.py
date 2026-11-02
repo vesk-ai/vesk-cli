@@ -11,6 +11,8 @@ from typing import Any, ClassVar
 
 import yaml
 
+# Latest official edition; no 2026 edition exists (checked on genai.owasp.org).
+OWASP_VERSION = "2025"
 DEFAULT_SYSTEM_PROMPT_VERSION = "1"
 DEFAULT_SYSTEM_PROMPT = (
     "You are a customer support assistant for a company.\n"
@@ -70,6 +72,7 @@ class Probe:
     severity: ClassVar[str]
     description: ClassVar[str]
     title: ClassVar[str] = ""
+    owasp: ClassVar[tuple[str, ...]] = ()  # OWASP LLM Top 10 (2025) IDs
 
     @property
     def display_name(self) -> str:

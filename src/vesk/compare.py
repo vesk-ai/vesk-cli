@@ -73,8 +73,11 @@ def compare(old: Results, new: Results) -> dict[str, Any]:
 
 def render_text(d: dict[str, Any]) -> str:
     lines = [f"Comparing {d['old_run'] or 'old'} -> {d['new_run'] or 'new'}"]
-    for title, key in (("Regressions", "regressions"), ("Improvements", "improvements"),
-                       ("Other status changes", "other_changes")):
+    for title, key in (
+        ("Regressions", "regressions"),
+        ("Improvements", "improvements"),
+        ("Other status changes", "other_changes"),
+    ):
         lines.append(f"\n{title}: {len(d[key])}")
         lines += [f"  {i['case']}: {i['old']} -> {i['new']}" for i in d[key]]
     lines.append(f"\nCases added: {len(d['added_cases'])}, removed: {len(d['removed_cases'])}")

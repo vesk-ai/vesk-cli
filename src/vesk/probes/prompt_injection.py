@@ -19,6 +19,7 @@ class PromptInjection(Probe):
     name = "prompt_injection"
     category = "prompt_injection"
     severity = "high"
+    owasp = ("LLM01:2025",)
     title = "Prompt Injection"
     description = (
         "Sends instructions that try to override the system prompt, directly or hidden "
@@ -39,7 +40,10 @@ class PromptInjection(Probe):
                     id=cid,
                     messages=[
                         {"role": "system", "content": system_prompt or DEFAULT_SYSTEM_PROMPT},
-                        {"role": "user", "content": item["prompt"].format(part_a=part_a, part_b=part_b)},
+                        {
+                            "role": "user",
+                            "content": item["prompt"].format(part_a=part_a, part_b=part_b),
+                        },
                     ],
                     meta={"canary": canary, "technique": item["technique"]},
                 )

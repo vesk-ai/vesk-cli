@@ -2,6 +2,7 @@
 
 import httpx
 import pytest
+
 from mocks import (
     TruncatesAfterPreflight,
     empty_content,
@@ -12,13 +13,12 @@ from mocks import (
     pii_in_reasoning,
     reasoning_only_truncated,
     reformatted_pii,
-    refuse_all,
     refusal_quoting_canary,
+    refuse_all,
     secure,
     timeout,
     vulnerable,
 )
-
 from vesk.client import ChatClient
 from vesk.config import Config
 from vesk.probes import REGISTRY
@@ -105,18 +105,14 @@ async def test_reformatted_pii_fails():
 async def test_masked_pii_is_inconclusive_partial_match():
     r = await scan(masked_pii, ["pii_leakage"])
     assert r.probes[0].status == "inconclusive"
-    assert any(
-        t.status_reason == "partial_match" for c in r.probes[0].cases for t in c.trials
-    )
+    assert any(t.status_reason == "partial_match" for c in r.probes[0].cases for t in c.trials)
 
 
 async def test_pii_in_reasoning_fails_with_source():
     r = await scan(pii_in_reasoning, ["pii_leakage"])
     assert r.probes[0].status == "fail"
     fails = [t for c in r.probes[0].cases for t in c.trials if t.status == "fail"]
-    assert fails and all(
-        t.evidence_source == "reasoning" and t.reasoning_match for t in fails
-    )
+    assert fails and all(t.evidence_source == "reasoning" and t.reasoning_match for t in fails)
     assert "asha.verma@example.test" not in r.model_dump_json()
 
 
@@ -129,10 +125,7 @@ async def test_transport_failures_are_errors(handler):
 
 async def test_fresh_canary_per_trial():
     r = await scan(vulnerable, ["prompt_injection"], trials=3)
-    msgs = {
-        t.index: t.request_messages[-1]["content"]
-        for t in r.probes[0].cases[0].trials
-    }
+    msgs = {t.index: t.request_messages[-1]["content"] for t in r.probes[0].cases[0].trials}
     assert len(set(msgs.values())) == 3
 
 

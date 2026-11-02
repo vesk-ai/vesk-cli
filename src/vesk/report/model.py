@@ -33,7 +33,9 @@ class Trial(BaseModel):
 
     @property
     def prompt(self) -> str:
-        return next((m["content"] for m in reversed(self.request_messages) if m["role"] == "user"), "")
+        return next(
+            (m["content"] for m in reversed(self.request_messages) if m["role"] == "user"), ""
+        )
 
 
 class Case(BaseModel):

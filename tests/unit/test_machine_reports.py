@@ -7,12 +7,25 @@ from vesk.cli import app
 from vesk.report.model import Results
 from vesk.report.render import NOTICE, render
 
-R = Results.model_validate({
-    "schema_version": 2, "target": "http://x/v1",
-    "probes": [{"id": "pii_leakage", "name": "PII Leakage", "status": "fail", "cases": [
-        {"id": "a", "status": "fail"}, {"id": "b", "status": "pass"}, {"id": "c", "status": "inconclusive"},
-        {"id": "d", "status": "error"}]}],
-})
+R = Results.model_validate(
+    {
+        "schema_version": 2,
+        "target": "http://x/v1",
+        "probes": [
+            {
+                "id": "pii_leakage",
+                "name": "PII Leakage",
+                "status": "fail",
+                "cases": [
+                    {"id": "a", "status": "fail"},
+                    {"id": "b", "status": "pass"},
+                    {"id": "c", "status": "inconclusive"},
+                    {"id": "d", "status": "error"},
+                ],
+            }
+        ],
+    }
+)
 
 
 def test_sarif():
@@ -26,7 +39,12 @@ def test_sarif():
 def test_junit():
     root = ET.fromstring(render(R, "junit"))
     s = root.find("testsuite")
-    assert (s.get("tests"), s.get("failures"), s.get("errors"), s.get("skipped")) == ("4", "1", "1", "1")
+    assert (s.get("tests"), s.get("failures"), s.get("errors"), s.get("skipped")) == (
+        "4",
+        "1",
+        "1",
+        "1",
+    )
 
 
 def test_sidecar(tmp_path):

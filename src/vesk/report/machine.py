@@ -25,27 +25,39 @@ def to_sarif(r: Results, notice: str) -> str:
     for p in r.probes:
         if p.id not in seen:
             seen.add(p.id)
-            rules.append({"id": p.id, "name": p.name or p.id, "shortDescription": {"text": p.name or p.id},
-                          "fullDescription": {"text": p.description or p.name or p.id}})
+            rules.append(
+                {
+                    "id": p.id,
+                    "name": p.name or p.id,
+                    "shortDescription": {"text": p.name or p.id},
+                    "fullDescription": {"text": p.description or p.name or p.id},
+                }
+            )
         items = [(c.id, c.status, _reason(c)) for c in p.cases if c.status != "pass"]
         if not p.cases and p.status != "pass":
             items = [(p.id, p.status, p.error or p.status)]
         for cid, status, why in items:
-            out.append({
-                "ruleId": p.id,
-                "level": _LEVEL.get(status, "note"),
-                "message": {"text": f"{p.id}/{cid}: {status}. {why}"},
-                "locations": [{"physicalLocation": {"artifactLocation": {"uri": r.target or "target"}}}],
-                "properties": {"status": status},
-            })
+            out.append(
+                {
+                    "ruleId": p.id,
+                    "level": _LEVEL.get(status, "note"),
+                    "message": {"text": f"{p.id}/{cid}: {status}. {why}"},
+                    "locations": [
+                        {"physicalLocation": {"artifactLocation": {"uri": r.target or "target"}}}
+                    ],
+                    "properties": {"status": status},
+                }
+            )
     doc = {
         "$schema": SARIF_SCHEMA,
         "version": "2.1.0",
-        "runs": [{
-            "tool": {"driver": {"name": "vesk", "version": r.vesk_version, "rules": rules}},
-            "results": out,
-            "properties": {"notice": notice, "run_id": r.run_id},
-        }],
+        "runs": [
+            {
+                "tool": {"driver": {"name": "vesk", "version": r.vesk_version, "rules": rules}},
+                "results": out,
+                "properties": {"notice": notice, "run_id": r.run_id},
+            }
+        ],
     }
     return json.dumps(doc, indent=2) + "\n"
 
@@ -85,7 +97,10 @@ def _mark(tc: ET.Element, status: str, why: str, counts: dict[str, int]) -> None
 
 
 def write_sidecar(path: Path) -> Path:
-    """Write `<file>.sha256`. Detects file changes only; it is not a signature and proves no authorship."""
+    """Write `<file>.sha256`.
+
+    Detects file changes only; it is not a signature and proves no authorship.
+    """
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     side = path.with_name(path.name + ".sha256")
     side.write_text(f"{digest}  {path.name}\n", encoding="utf-8")

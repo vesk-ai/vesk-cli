@@ -13,11 +13,28 @@ RESULTS = {
     "target": "http://localhost:8000/v1",
     "model": "m",
     "probes": [
-        {"id": "inj", "name": "Injection", "category": "prompt-injection", "status": "pass",
-         "cases": [{"id": "a", "passed": True}]},
-        {"id": "pii", "name": "PII", "category": "pii", "status": "fail",
-         "cases": [{"id": "b", "passed": False, "prompt": "<script>x</script>",
-                    "response": "a`b\nc", "evidence": "leaked"}]},
+        {
+            "id": "inj",
+            "name": "Injection",
+            "category": "prompt-injection",
+            "status": "pass",
+            "cases": [{"id": "a", "passed": True}],
+        },
+        {
+            "id": "pii",
+            "name": "PII",
+            "category": "pii",
+            "status": "fail",
+            "cases": [
+                {
+                    "id": "b",
+                    "passed": False,
+                    "prompt": "<script>x</script>",
+                    "response": "a`b\nc",
+                    "evidence": "leaked",
+                }
+            ],
+        },
         {"id": "jb", "status": "error", "error": "timeout"},
     ],
 }

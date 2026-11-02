@@ -13,8 +13,13 @@ from pydantic import BaseModel, Field
 from vesk import __version__, meta
 from vesk.client import ChatClient, EndpointError
 from vesk.config import SEVERITY_RANK, Config, ConfigError
+from vesk.judge import apply_judge, judge_trial
 from vesk.probes import REGISTRY, Probe
-from vesk.probes.base import DEFAULT_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT_VERSION
+from vesk.probes.base import (
+    DEFAULT_SYSTEM_PROMPT,
+    DEFAULT_SYSTEM_PROMPT_VERSION,
+    OWASP_VERSION,
+)
 from vesk.status import Status, case_status, classify_completion, rollup, wilson_interval
 
 RESPONSE_LIMIT = 500
@@ -51,6 +56,7 @@ class TrialResult(BaseModel):
     evidence: str = ""
     evidence_source: str = "content"
     reasoning_match: bool = False
+    judge: dict | None = None  # stored separately from the detector verdict
 
 
 def _stats(statuses: list[Status]) -> dict:
@@ -89,6 +95,7 @@ class ProbeRun(BaseModel):
     name: str
     category: str
     severity: str
+    owasp: list[str] = Field(default_factory=list)
     status: Status
     description: str = ""
     error: str = ""
@@ -102,6 +109,7 @@ class RunOptions(BaseModel):
     system_prompt_source: str = "default_baseline"
     include_system_prompt: bool = False
     redact: bool = False
+    judge_authoritative: bool = False
     secrets: list[str] = Field(default_factory=list, exclude=True)
 
 
@@ -205,6 +213,7 @@ async def _run_probe(
     sem: asyncio.Semaphore,
     opts: RunOptions,
     progress: Progress | None = None,
+    judge_client: ChatClient | None = None,
 ):
     trials = cfg.scan.trials
     system_prompt = cfg.target.system_prompt or DEFAULT_SYSTEM_PROMPT
@@ -243,8 +252,14 @@ async def _run_probe(
             status, reason = "inconclusive", verdict.reason
         else:
             status, reason = "pass", ""
+        judge = None
+        if judge_client is not None and comp.content.strip():
+            judge = await judge_trial(judge_client, probe.description, case.prompt, comp.content)
+            if opts.judge_authoritative:
+                status, reason = apply_judge(status, reason, judge)
         return case.id, TrialResult(
             **base,
+            judge=judge,
             status=status,
             status_reason=reason,
             response=_store_text(probe, case, comp.content, opts),
@@ -271,8 +286,13 @@ async def _run_probe(
         trs.sort(key=lambda x: x.index)
         st = case_status([x.status for x in trs], cfg.scan.pass_threshold)
         cases_out.append(
-            CaseResult(id=cid, status=st, passed=st == "pass", trials=trs,
-                       **_flat(_stats([x.status for x in trs])))
+            CaseResult(
+                id=cid,
+                status=st,
+                passed=st == "pass",
+                trials=trs,
+                **_flat(_stats([x.status for x in trs])),
+            )
         )
     all_trials = [x.status for trs in grouped.values() for x in trs]
     n_err = all_trials.count("error")
@@ -285,6 +305,7 @@ async def _run_probe(
         name=probe.display_name,
         category=probe.category,
         severity=probe.severity,
+        owasp=list(probe.owasp),
         status=rollup(c.status for c in cases_out),
         description=probe.description,
         error=error,
@@ -324,6 +345,7 @@ def _untested(probe: Probe, preflight: dict) -> ProbeRun:
         name=probe.display_name,
         category=probe.category,
         severity=probe.severity,
+        owasp=list(probe.owasp),
         status="error",
         description=probe.description,
         error=f"not run, preflight failed: {preflight['detail']}",
@@ -336,6 +358,7 @@ async def run_scan(
     client: ChatClient,
     progress: Progress | None = None,
     options: RunOptions | None = None,
+    judge_client: ChatClient | None = None,
 ) -> ScanResults:
     """`progress` receives short status lines: probe names and counts only, never content."""
     opts = options or RunOptions()
@@ -356,7 +379,7 @@ async def run_scan(
             continue
         if progress:
             progress(f"[{i}/{len(probes)}] {p.name}: running")
-        run = await _run_probe(p, cfg, client, sem, opts, progress)
+        run = await _run_probe(p, cfg, client, sem, opts, progress, judge_client)
         if progress:
             progress(f"[{i}/{len(probes)}] {p.name}: {run.status}")
         runs.append(run)
@@ -387,6 +410,12 @@ async def run_scan(
         "pass_threshold": cfg.scan.pass_threshold,
         "samples_per_probe": cfg.scan.samples_per_probe,
         "system_prompt": sp_meta,
+        "owasp_llm_top10_version": OWASP_VERSION,
+        "judge": (
+            {"model": cfg.judge.model, "authoritative": opts.judge_authoritative}
+            if judge_client is not None and cfg.judge
+            else None
+        ),
         "redacted": opts.redact,
         "environment": meta.environment(),
     }

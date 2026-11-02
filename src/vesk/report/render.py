@@ -53,4 +53,8 @@ def render(results: Results, fmt: str = "md") -> str:
         from vesk.report import machine
 
         return (machine.to_sarif if fmt == "sarif" else machine.to_junit)(results, NOTICE)
-    return _env(fmt).get_template(f"report.{fmt}.j2").render(r=results, notice=NOTICE, disclaimer=NOTICE)
+    return (
+        _env(fmt)
+        .get_template(f"report.{fmt}.j2")
+        .render(r=results, notice=NOTICE, disclaimer=NOTICE)
+    )

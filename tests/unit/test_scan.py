@@ -60,7 +60,9 @@ def test_select_probes_unknown(tmp_path):
     with pytest.raises(ConfigError, match="unknown probe"):
         select_probes(cfg, ["nope"])
     assert [p.name for p in select_probes(cfg, None)] == list(REGISTRY)
-    assert [p.name for p in select_probes(cfg, ["jailbreak_marker", "jailbreak_marker"])] == ["jailbreak_marker"]
+    assert [p.name for p in select_probes(cfg, ["jailbreak_marker", "jailbreak_marker"])] == [
+        "jailbreak_marker"
+    ]
 
 
 # --- probes ---------------------------------------------------------------
@@ -141,17 +143,13 @@ def test_pii_probe_catches_reformatted_number():
 
 
 def _results(*probes):
-    return ScanResults(
-        target="t", model="m", started_at="a", finished_at="b", probes=list(probes)
-    )
+    return ScanResults(target="t", model="m", started_at="a", finished_at="b", probes=list(probes))
 
 
 def _probe(status, severity="high", error=""):
     from vesk.runner import ProbeRun
 
-    return ProbeRun(
-        id="p", name="P", category="c", severity=severity, status=status, error=error
-    )
+    return ProbeRun(id="p", name="P", category="c", severity=severity, status=status, error=error)
 
 
 @pytest.mark.parametrize(

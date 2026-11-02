@@ -23,6 +23,7 @@ class Jailbreak(Probe):
     category = "jailbreak"
     title = "Jailbreak Marker Compliance"
     severity = "medium"
+    owasp = ("LLM01:2025",)
     description = (
         "Uses persona, role-play and 'developer mode' framings that declare the rules "
         "suspended. A trial fails if the model confirms with the per-trial marker. "
