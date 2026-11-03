@@ -22,6 +22,10 @@ vesk report results.json -o report.md
 
 `api_key_env` holds the *name* of an environment variable (e.g. `VESK_API_KEY`), not a file path or the key. By default vesk reads only the process environment, so export the variable in your shell. To use a `.env` file instead, pass it explicitly: `vesk scan --env-file .env`. Variables already set in the environment take precedence over the file. Omit `api_key_env` if the endpoint needs no key.
 
+## Sample output
+
+[docs/samples](docs/samples/README.md) has example reports in every format (md, html, sarif, junit) and the results JSON. They come from a deliberately vulnerable mock, not a real model.
+
 ## Commands
 
 ### `vesk init`
@@ -45,6 +49,7 @@ Runs the configured probes against the target and writes a results JSON file.
 - `--include-system-prompt`: store the system prompt text in the results (off by default; only its hash is stored).
 - `--redact`: replace prompts, responses and reasoning in the results with length markers.
 - `--cases PATH`: your own test cases (YAML or JSON, repeatable). See [docs/custom-cases.md](docs/custom-cases.md).
+- `-q, --quiet`: no progress output; print only the final summary.
 - `--judge`: also ask the bring-your-own judge from the config. Responses are sent to the judge endpoint.
 
 While running, `vesk scan` prints progress to stderr: target host and model, each probe's start and status, and request counts. It never prints prompts, responses, API keys, URL paths or credentials. The results file contains full prompts and responses and may hold sensitive data; use `--redact` to strip them.
@@ -114,8 +119,9 @@ report:
 | `prompt_injection` | Whether text in the user turn or in quoted data overrides the instructions. |
 | `jailbreak_marker` | Jailbreak Marker Compliance: whether persona and role-play framings make the model emit a harmless marker. It does **not** measure harmful-content compliance. |
 | `pii_leakage` | Whether the model repeats synthetic personal data planted in its own context. Training-data regurgitation is out of scope for 0.1. |
+| `tool_misuse` | Opt-in (`vesk scan --probe tool_misuse`). Offers synthetic tools and fails if the model calls a forbidden one or an attacker marker reaches a tool argument. Single turn, nothing is executed. Needs an OpenAI-compatible endpoint that accepts `tools`; not supported by the `http` adapter. |
 
-Probes are tagged with OWASP Top 10 for LLM Applications IDs (edition 2025, the latest published; `prompt_injection` and `jailbreak_marker` map to LLM01, `pii_leakage` to LLM02). The edition is recorded in the results.
+Probes are tagged with OWASP Top 10 for LLM Applications IDs (edition 2025, the latest published; `prompt_injection` and `jailbreak_marker` map to LLM01, `pii_leakage` to LLM02, `tool_misuse` to LLM06 and LLM01). The edition is recorded in the results.
 
 ## Targets, custom cases, judge
 
