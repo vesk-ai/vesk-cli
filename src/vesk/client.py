@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
@@ -30,6 +31,7 @@ class Completion:
     latency_s: float = 0.0
     started_at: str = ""
     request: dict[str, Any] = field(default_factory=dict)
+    tool_calls: list[dict[str, str]] = field(default_factory=list)  # {name, arguments}
 
 
 Sleep = Callable[[float], Awaitable[None]]
@@ -82,8 +84,17 @@ class ChatClient:
     async def complete(self, messages: list[dict[str, str]]) -> str:
         return (await self.complete_detailed(messages)).content
 
-    async def complete_detailed(self, messages: list[dict[str, str]]) -> Completion:
-        payload = {"model": self._model, "messages": messages, **self.generation_params}
+    async def complete_detailed(
+        self, messages: list[dict[str, str]], tools: list[dict[str, Any]] | None = None
+    ) -> Completion:
+        payload: dict[str, Any] = {
+            "model": self._model,
+            "messages": messages,
+            **self.generation_params,
+        }
+        if tools:
+            payload["tools"] = tools
+            payload["tool_choice"] = "auto"
         started_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
         t0 = time.monotonic()
         last = "no attempt made"
@@ -112,7 +123,7 @@ def _parse(
         body = resp.json()
         choice = body["choices"][0]
         message = choice["message"]
-        content = message["content"]
+        content = message.get("content")
     except (ValueError, KeyError, IndexError, TypeError):
         raise EndpointError("response is not an OpenAI-style chat completion") from None
     # Ollama's /v1 uses "reasoning"; other servers use "reasoning_content".
@@ -128,4 +139,20 @@ def _parse(
         latency_s=round(latency_s, 3),
         started_at=started_at,
         request=request,
+        tool_calls=_tool_calls(message),
     )
+
+
+def _tool_calls(message: dict[str, Any]) -> list[dict[str, str]]:
+    """Tool calls the model asked for, as {name, arguments}; arguments stay a raw string."""
+    raw = message.get("tool_calls")
+    out: list[dict[str, str]] = []
+    for call in raw if isinstance(raw, list) else []:
+        fn = call.get("function") if isinstance(call, dict) else None
+        if not isinstance(fn, dict):
+            continue
+        args = fn.get("arguments", "")
+        if not isinstance(args, str):
+            args = json.dumps(args, sort_keys=True)
+        out.append({"name": str(fn.get("name", "")), "arguments": args})
+    return out

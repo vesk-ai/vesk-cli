@@ -82,7 +82,11 @@ class HttpClient:
     def generation_params(self) -> dict[str, Any]:
         return {"adapter": "http", "note": "generation parameters are set by the target"}
 
-    async def complete_detailed(self, messages: list[dict[str, str]]) -> Completion:
+    async def complete_detailed(
+        self, messages: list[dict[str, str]], tools: list[dict[str, Any]] | None = None
+    ) -> Completion:
+        if tools:
+            raise EndpointError("the http adapter does not support tool calls")
         raw = render_template(self._template, messages, self._api_key)
         try:
             payload = json.loads(raw)

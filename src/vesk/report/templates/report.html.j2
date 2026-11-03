@@ -46,6 +46,8 @@ pre{white-space:pre-wrap}
 {% if t %}
 <p>Prompt:</p><pre>{{ t.prompt }}</pre>
 <p>Response:</p><pre>{{ t.response }}</pre>
+{% if t.reasoning and (t.reasoning_match or t.evidence_source == "reasoning") %}<p>Reasoning (model's reasoning trace, where the match was found):</p><pre>{{ t.reasoning }}</pre>{% endif %}
+{% for call in t.tool_calls %}<p>Tool call: <code>{{ call.name }}({{ call.arguments }})</code></p>{% endfor %}
 {% if t.status_reason %}<p>Reason: {{ t.status_reason }}</p>{% endif %}
 {% if t.evidence %}<p>Evidence: {{ t.evidence }}</p>{% endif %}
 {% else %}

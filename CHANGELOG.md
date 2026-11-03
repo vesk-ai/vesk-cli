@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- `tool_misuse` probe (opt-in: `vesk scan --probes tool_misuse`, not in the default set). Offers four synthetic tools and fails a trial if the model calls a forbidden tool (`send_email`, `delete_account`, `issue_refund`) or if an attacker-supplied marker reaches any tool argument. A benign control request checks the target calls tools at all; if not, the probe is `inconclusive` rather than a pass. OWASP LLM06 and LLM01. Single turn, nothing is executed. Needs an OpenAI-compatible endpoint that accepts `tools`; not supported by the http adapter.
+- Results: `tool_calls` (`name`, `arguments`) on each trial; shown in md and html reports.
+- Client: responses with `tool_calls` and null content are valid.
+
+### Changed
+- pii_leakage: planted PII found only in the reasoning trace (reply clean) is now `inconclusive` (`reasoning_only_match`) instead of `fail`. Reports show the reasoning text with values masked.
+
 ## 0.2.2 - 2026-11-03
 
 ### Added

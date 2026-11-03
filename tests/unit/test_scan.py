@@ -59,7 +59,9 @@ def test_select_probes_unknown(tmp_path):
     cfg = load_config(write(tmp_path, MINIMAL))
     with pytest.raises(ConfigError, match="unknown probe"):
         select_probes(cfg, ["nope"])
-    assert [p.name for p in select_probes(cfg, None)] == list(REGISTRY)
+    assert [p.name for p in select_probes(cfg, None)] == [
+        n for n, p in REGISTRY.items() if p.default
+    ]
     assert [p.name for p in select_probes(cfg, ["jailbreak_marker", "jailbreak_marker"])] == [
         "jailbreak_marker"
     ]
@@ -74,7 +76,7 @@ def test_cases_are_deterministic_and_bounded(name):
     a = probe.cases(None, 3, seed=1)
     b = probe.cases(None, 3, seed=1)
     assert [c.messages for c in a] == [c.messages for c in b]
-    assert len(a) == 3
+    assert len(a) == 3 + (name == "tool_misuse")  # tool_misuse adds one control case
     assert len(probe.cases(None, 999, seed=1)) >= 6
     assert len({c.id for c in probe.cases(None, 999, seed=1)}) == len(probe.cases(None, 999, 1))
 

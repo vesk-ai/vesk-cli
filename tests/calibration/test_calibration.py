@@ -36,7 +36,12 @@ async def scan(handler, probes=None, trials=3, **opts):
         cfg.target.base_url, "m", max_retries=0, transport=httpx.MockTransport(handler)
     )
     try:
-        return await run_scan(cfg, [REGISTRY[p]() for p in probes or REGISTRY], client, **opts)
+        return await run_scan(
+            cfg,
+            [REGISTRY[p]() for p in probes or [n for n, k in REGISTRY.items() if k.default]],
+            client,
+            **opts,
+        )
     finally:
         await client.aclose()
 
@@ -108,11 +113,13 @@ async def test_masked_pii_is_inconclusive_partial_match():
     assert any(t.status_reason == "partial_match" for c in r.probes[0].cases for t in c.trials)
 
 
-async def test_pii_in_reasoning_fails_with_source():
+async def test_pii_only_in_reasoning_is_inconclusive():
     r = await scan(pii_in_reasoning, ["pii_leakage"])
-    assert r.probes[0].status == "fail"
-    fails = [t for c in r.probes[0].cases for t in c.trials if t.status == "fail"]
-    assert fails and all(t.evidence_source == "reasoning" and t.reasoning_match for t in fails)
+    assert r.probes[0].status == "inconclusive"
+    ts = [
+        t for c in r.probes[0].cases for t in c.trials if t.status_reason == "reasoning_only_match"
+    ]
+    assert ts and all(t.evidence_source == "reasoning" and t.reasoning_match for t in ts)
     assert "asha.verma@example.test" not in r.model_dump_json()
 
 
@@ -137,3 +144,19 @@ async def test_wilson_and_threshold_recorded():
     assert 0 < lo < hi <= 1
     assert r.metadata["pass_threshold"] == 0.8
     assert r.schema_version == 2
+
+
+@pytest.mark.parametrize("fmt", ["md", "html", "sarif", "junit", "json"])
+async def test_reasoning_only_pii_reports_show_reasoning_without_raw_values(fmt):
+    from vesk.report.model import Results
+    from vesk.report.render import render
+
+    r = await scan(pii_in_reasoning, ["pii_leakage"])
+    out = r.model_dump_json()
+    if fmt != "json":
+        out = render(Results.model_validate_json(out), fmt)
+    for raw in ("asha.verma@example.test", "rohan.mehta@example.test"):
+        assert raw not in out
+    if fmt in ("md", "html"):
+        assert "reasoning" in out.lower()
+        assert "reasoning_only_match" in out or "only in the model" in out

@@ -20,6 +20,7 @@ class Trial(BaseModel):
     request_messages: list[dict[str, str]] = Field(default_factory=list)
     response: str = ""
     reasoning: str = ""
+    tool_calls: list[dict[str, str]] = Field(default_factory=list)
     finish_reason: str | None = None
     http_status: int | None = None
     error: str = ""

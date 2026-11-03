@@ -46,6 +46,12 @@ Error: {{ p.error }}
 {% if t %}
   - Prompt: `{{ t.prompt|replace("`", "'")|replace("\n", " ") }}`
   - Response: `{{ t.response|replace("`", "'")|replace("\n", " ") }}`
+{% if t.reasoning and (t.reasoning_match or t.evidence_source == "reasoning") %}
+  - Reasoning (model's reasoning trace, where the match was found): `{{ t.reasoning|replace("`", "'")|replace("\n", " ") }}`
+{% endif %}
+{% for call in t.tool_calls %}
+  - Tool call: `{{ call.name|replace("`", "'") }}({{ call.arguments|replace("`", "'")|replace("\n", " ") }})`
+{% endfor %}
 {% if t.status_reason %}
   - Reason: {{ t.status_reason }}
 {% endif %}

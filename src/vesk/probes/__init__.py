@@ -4,8 +4,11 @@ from vesk.probes.base import Case, Probe, Verdict
 from vesk.probes.jailbreak import Jailbreak
 from vesk.probes.pii_leakage import PiiLeakage
 from vesk.probes.prompt_injection import PromptInjection
+from vesk.probes.tool_misuse import ToolMisuse
 
-REGISTRY: dict[str, type[Probe]] = {p.name: p for p in (PromptInjection, Jailbreak, PiiLeakage)}
+REGISTRY: dict[str, type[Probe]] = {
+    p.name: p for p in (PromptInjection, Jailbreak, PiiLeakage, ToolMisuse)
+}
 
 
 def register(probe: type[Probe]) -> type[Probe]:

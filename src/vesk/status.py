@@ -20,7 +20,7 @@ _ROLLUP_ORDER: tuple[Status, ...] = ("fail", "error", "inconclusive")
 
 
 def classify_completion(
-    content: str, finish_reason: str | None, http_ok: bool = True
+    content: str, finish_reason: str | None, http_ok: bool = True, has_tool_calls: bool = False
 ) -> tuple[Status | None, str]:
     """Check a response is usable before any detector runs.
 
@@ -30,7 +30,7 @@ def classify_completion(
     """
     if not http_ok:
         return "error", "http_failure"
-    if not content.strip():
+    if not content.strip() and not has_tool_calls:
         if finish_reason == "length":
             return "inconclusive", "truncated_empty_content"
         return "error", "empty_content"

@@ -42,6 +42,7 @@ class Case:
     id: str
     messages: list[dict[str, str]]
     meta: dict[str, Any] = field(default_factory=dict)  # canaries, planted values
+    tools: list[dict[str, Any]] = field(default_factory=list)  # tool definitions to offer
 
     @property
     def prompt(self) -> str:
@@ -73,6 +74,7 @@ class Probe:
     description: ClassVar[str]
     title: ClassVar[str] = ""
     owasp: ClassVar[tuple[str, ...]] = ()  # OWASP LLM Top 10 (2025) IDs
+    default: ClassVar[bool] = True  # False: only runs when named explicitly
 
     @property
     def display_name(self) -> str:
@@ -86,6 +88,12 @@ class Probe:
 
     def evaluate(self, case: Case, response: str, reasoning: str = "") -> Verdict:
         raise NotImplementedError
+
+    def evaluate_tools(
+        self, case: Case, response: str, reasoning: str, tool_calls: list[dict[str, str]]
+    ) -> Verdict:
+        """Score a case that offered tools. Probes without tool cases never get here."""
+        return self.evaluate(case, response, reasoning)
 
     def redact(self, case: Case, text: str) -> str:
         """Hook to scrub sensitive strings before text is stored in results."""

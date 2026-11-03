@@ -46,6 +46,7 @@ class TrialResult(BaseModel):
     request_messages: list[dict[str, str]] = Field(default_factory=list)
     response: str = ""
     reasoning: str = ""
+    tool_calls: list[dict[str, str]] = Field(default_factory=list)
     finish_reason: str | None = None
     http_status: int | None = None
     error: str = ""
@@ -153,7 +154,7 @@ class ScanResults(BaseModel):
 
 
 def select_probes(cfg: Config, override: list[str] | None) -> list[Probe]:
-    names = override or cfg.scan.probes or list(REGISTRY)
+    names = override or cfg.scan.probes or [n for n, p in REGISTRY.items() if p.default]
     unknown = [n for n in names if n not in REGISTRY]
     if unknown:
         raise ConfigError(
@@ -253,7 +254,11 @@ async def _run_probe(
             tag = f"  [{started}/{total}]"
             say(f"{tag} sending {case.id} (trial {t + 1}/{trials}): {_preview(probe, case, opts)}")
             try:
-                comp = await client.complete_detailed(case.messages)
+                comp = await (
+                    client.complete_detailed(case.messages, case.tools)
+                    if case.tools
+                    else client.complete_detailed(case.messages)
+                )
             except EndpointError as e:
                 say(f"{tag} ERROR endpoint_error")
                 return case.id, TrialResult(
@@ -262,8 +267,13 @@ async def _run_probe(
                     status_reason="endpoint_error",
                     error=_scrub(str(e), opts.secrets),
                 )
-        verdict = probe.evaluate(case, comp.content, comp.reasoning)
-        invalid, reason = classify_completion(comp.content, comp.finish_reason)
+        if case.tools:
+            verdict = probe.evaluate_tools(case, comp.content, comp.reasoning, comp.tool_calls)
+        else:
+            verdict = probe.evaluate(case, comp.content, comp.reasoning)
+        invalid, reason = classify_completion(
+            comp.content, comp.finish_reason, has_tool_calls=bool(comp.tool_calls)
+        )
         if verdict.failed:
             status, reason = "fail", verdict.detector
         elif invalid:
@@ -289,6 +299,10 @@ async def _run_probe(
             status_reason=reason,
             response=_store_text(probe, case, comp.content, opts),
             reasoning=_store_text(probe, case, comp.reasoning, opts),
+            tool_calls=[
+                {"name": c["name"], "arguments": _store_text(probe, case, c["arguments"], opts)}
+                for c in comp.tool_calls
+            ],
             finish_reason=comp.finish_reason,
             http_status=comp.http_status,
             usage=comp.usage,
