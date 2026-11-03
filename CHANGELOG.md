@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Added
+- Detector evaluation: hand-labelled set (`evals/`, 107 entries) and per-probe TPR/FPR with Wilson intervals; see `docs/detection-metrics.md`. No real models measured yet.
+- Report integrity (docs/signing.md): `vesk keygen`, `vesk sign`, `vesk scan --sign-key` and `vesk verify-report` with detached Ed25519 signatures (`<file>.sig`). Tamper-evidence only, not certification. Results metadata gains `config_sha256` and `probes`.
 - `vesk scan --offline`: only localhost/private-IP targets; all other sockets and DNS lookups are blocked. No-telemetry guarantee documented in the README and enforced by a socket-guard test. `meta.py` audited: no network use.
 - `vesk scan --fail-on none|low|medium|high` (overrides `scan.fail_on`). `Dockerfile` and `examples/ci/` (GitHub Actions with SARIF upload, GitLab CI).
 - `tool_misuse` probe (opt-in: `vesk scan --probe tool_misuse`, not in the default set). Offers four synthetic tools and fails a trial if the model calls a forbidden tool (`send_email`, `delete_account`, `issue_refund`) or if an attacker-supplied marker reaches any tool argument. A benign control request checks the target calls tools at all; if not, the probe is `inconclusive` rather than a pass. OWASP LLM06 and LLM01. Single turn, nothing is executed. Needs an OpenAI-compatible endpoint that accepts `tools`; not supported by the http adapter.
