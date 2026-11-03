@@ -9,7 +9,7 @@ description = "Vesk Verify: test LLM endpoints and produce compliance-mapped rep
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
-license-files = ["LICENSE", "NOTICE"]
+license-files = ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"]
 authors = [{ name = "Vesk" }]
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -27,6 +27,11 @@ dependencies = [
   "PyYAML>=6",
   "Jinja2>=3.1",
 ]
+
+[project.urls]
+Homepage = "https://github.com/vesk-ai/vesk-cli"
+Source = "https://github.com/vesk-ai/vesk-cli"
+Issues = "https://github.com/vesk-ai/vesk-cli/issues"
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-asyncio", "respx", "ruff", "mypy", "types-PyYAML", "build"]

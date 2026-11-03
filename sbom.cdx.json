@@ -1,0 +1,512 @@
+{
+  "components": [
+    {
+      "bom-ref": "requirements-L9",
+      "description": "requirements line 9: Jinja2==3.1.6",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/Jinja2/"
+        }
+      ],
+      "name": "Jinja2",
+      "purl": "pkg:pypi/jinja2@3.1.6",
+      "type": "library",
+      "version": "3.1.6"
+    },
+    {
+      "bom-ref": "requirements-L11",
+      "description": "requirements line 11: MarkupSafe==3.0.4",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/MarkupSafe/"
+        }
+      ],
+      "name": "MarkupSafe",
+      "purl": "pkg:pypi/markupsafe@3.0.4",
+      "type": "library",
+      "version": "3.0.4"
+    },
+    {
+      "bom-ref": "requirements-L16",
+      "description": "requirements line 16: PyYAML==6.0.3",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/PyYAML/"
+        }
+      ],
+      "name": "PyYAML",
+      "purl": "pkg:pypi/pyyaml@6.0.3",
+      "type": "library",
+      "version": "6.0.3"
+    },
+    {
+      "bom-ref": "requirements-L15",
+      "description": "requirements line 15: Pygments==2.21.0",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/Pygments/"
+        }
+      ],
+      "name": "Pygments",
+      "purl": "pkg:pypi/pygments@2.21.0",
+      "type": "library",
+      "version": "2.21.0"
+    },
+    {
+      "bom-ref": "requirements-L1",
+      "description": "requirements line 1: annotated-doc==0.0.5",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/annotated-doc/"
+        }
+      ],
+      "name": "annotated-doc",
+      "purl": "pkg:pypi/annotated-doc@0.0.5",
+      "type": "library",
+      "version": "0.0.5"
+    },
+    {
+      "bom-ref": "requirements-L2",
+      "description": "requirements line 2: annotated-types==0.8.0",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/annotated-types/"
+        }
+      ],
+      "name": "annotated-types",
+      "purl": "pkg:pypi/annotated-types@0.8.0",
+      "type": "library",
+      "version": "0.8.0"
+    },
+    {
+      "bom-ref": "requirements-L3",
+      "description": "requirements line 3: anyio==4.16.0",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/anyio/"
+        }
+      ],
+      "name": "anyio",
+      "purl": "pkg:pypi/anyio@4.16.0",
+      "type": "library",
+      "version": "4.16.0"
+    },
+    {
+      "bom-ref": "requirements-L4",
+      "description": "requirements line 4: certifi==2026.10.23",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/certifi/"
+        }
+      ],
+      "name": "certifi",
+      "purl": "pkg:pypi/certifi@2026.10.23",
+      "type": "library",
+      "version": "2026.10.23"
+    },
+    {
+      "bom-ref": "requirements-L5",
+      "description": "requirements line 5: h11==0.16.0",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/h11/"
+        }
+      ],
+      "name": "h11",
+      "purl": "pkg:pypi/h11@0.16.0",
+      "type": "library",
+      "version": "0.16.0"
+    },
+    {
+      "bom-ref": "requirements-L6",
+      "description": "requirements line 6: httpcore==1.0.9",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/httpcore/"
+        }
+      ],
+      "name": "httpcore",
+      "purl": "pkg:pypi/httpcore@1.0.9",
+      "type": "library",
+      "version": "1.0.9"
+    },
+    {
+      "bom-ref": "requirements-L7",
+      "description": "requirements line 7: httpx==0.28.1",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/httpx/"
+        }
+      ],
+      "name": "httpx",
+      "purl": "pkg:pypi/httpx@0.28.1",
+      "type": "library",
+      "version": "0.28.1"
+    },
+    {
+      "bom-ref": "requirements-L8",
+      "description": "requirements line 8: idna==3.20",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/idna/"
+        }
+      ],
+      "name": "idna",
+      "purl": "pkg:pypi/idna@3.20",
+      "type": "library",
+      "version": "3.20"
+    },
+    {
+      "bom-ref": "requirements-L10",
+      "description": "requirements line 10: markdown-it-py==4.2.0",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/markdown-it-py/"
+        }
+      ],
+      "name": "markdown-it-py",
+      "purl": "pkg:pypi/markdown-it-py@4.2.0",
+      "type": "library",
+      "version": "4.2.0"
+    },
+    {
+      "bom-ref": "requirements-L12",
+      "description": "requirements line 12: mdurl==0.1.2",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/mdurl/"
+        }
+      ],
+      "name": "mdurl",
+      "purl": "pkg:pypi/mdurl@0.1.2",
+      "type": "library",
+      "version": "0.1.2"
+    },
+    {
+      "bom-ref": "requirements-L13",
+      "description": "requirements line 13: pydantic==2.14.2",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/pydantic/"
+        }
+      ],
+      "name": "pydantic",
+      "purl": "pkg:pypi/pydantic@2.14.2",
+      "type": "library",
+      "version": "2.14.2"
+    },
+    {
+      "bom-ref": "requirements-L14",
+      "description": "requirements line 14: pydantic_core==2.50.2",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/pydantic_core/"
+        }
+      ],
+      "name": "pydantic_core",
+      "purl": "pkg:pypi/pydantic-core@2.50.2",
+      "type": "library",
+      "version": "2.50.2"
+    },
+    {
+      "bom-ref": "requirements-L17",
+      "description": "requirements line 17: rich==15.0.0",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/rich/"
+        }
+      ],
+      "name": "rich",
+      "purl": "pkg:pypi/rich@15.0.0",
+      "type": "library",
+      "version": "15.0.0"
+    },
+    {
+      "bom-ref": "requirements-L18",
+      "description": "requirements line 18: shellingham==1.5.4",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/shellingham/"
+        }
+      ],
+      "name": "shellingham",
+      "purl": "pkg:pypi/shellingham@1.5.4",
+      "type": "library",
+      "version": "1.5.4"
+    },
+    {
+      "bom-ref": "requirements-L19",
+      "description": "requirements line 19: typer==0.27.3",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/typer/"
+        }
+      ],
+      "name": "typer",
+      "purl": "pkg:pypi/typer@0.27.3",
+      "type": "library",
+      "version": "0.27.3"
+    },
+    {
+      "bom-ref": "requirements-L20",
+      "description": "requirements line 20: typing-inspection==0.4.4",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/typing-inspection/"
+        }
+      ],
+      "name": "typing-inspection",
+      "purl": "pkg:pypi/typing-inspection@0.4.4",
+      "type": "library",
+      "version": "0.4.4"
+    },
+    {
+      "bom-ref": "requirements-L21",
+      "description": "requirements line 21: typing_extensions==4.16.0",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/typing_extensions/"
+        }
+      ],
+      "name": "typing_extensions",
+      "purl": "pkg:pypi/typing-extensions@4.16.0",
+      "type": "library",
+      "version": "4.16.0"
+    },
+    {
+      "bom-ref": "requirements-L22",
+      "description": "requirements line 22: vesk-cli==0.2.1",
+      "externalReferences": [
+        {
+          "comment": "implicit dist url",
+          "type": "distribution",
+          "url": "https://pypi.org/simple/vesk-cli/"
+        }
+      ],
+      "name": "vesk-cli",
+      "purl": "pkg:pypi/vesk-cli@0.2.1",
+      "type": "library",
+      "version": "0.2.1"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "requirements-L1"
+    },
+    {
+      "ref": "requirements-L10"
+    },
+    {
+      "ref": "requirements-L11"
+    },
+    {
+      "ref": "requirements-L12"
+    },
+    {
+      "ref": "requirements-L13"
+    },
+    {
+      "ref": "requirements-L14"
+    },
+    {
+      "ref": "requirements-L15"
+    },
+    {
+      "ref": "requirements-L16"
+    },
+    {
+      "ref": "requirements-L17"
+    },
+    {
+      "ref": "requirements-L18"
+    },
+    {
+      "ref": "requirements-L19"
+    },
+    {
+      "ref": "requirements-L2"
+    },
+    {
+      "ref": "requirements-L20"
+    },
+    {
+      "ref": "requirements-L21"
+    },
+    {
+      "ref": "requirements-L22"
+    },
+    {
+      "ref": "requirements-L3"
+    },
+    {
+      "ref": "requirements-L4"
+    },
+    {
+      "ref": "requirements-L5"
+    },
+    {
+      "ref": "requirements-L6"
+    },
+    {
+      "ref": "requirements-L7"
+    },
+    {
+      "ref": "requirements-L8"
+    },
+    {
+      "ref": "requirements-L9"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-11-03T04:36:17.482399+00:00",
+    "tools": {
+      "components": [
+        {
+          "description": "CycloneDX Software Bill of Materials (SBOM) generator for Python projects and environments",
+          "externalReferences": [
+            {
+              "type": "build-system",
+              "url": "https://github.com/CycloneDX/cyclonedx-python/actions"
+            },
+            {
+              "type": "distribution",
+              "url": "https://pypi.org/project/cyclonedx-bom/"
+            },
+            {
+              "type": "documentation",
+              "url": "https://cyclonedx-bom-tool.readthedocs.io/"
+            },
+            {
+              "type": "issue-tracker",
+              "url": "https://github.com/CycloneDX/cyclonedx-python/issues"
+            },
+            {
+              "type": "license",
+              "url": "https://github.com/CycloneDX/cyclonedx-python/blob/main/LICENSE"
+            },
+            {
+              "type": "release-notes",
+              "url": "https://github.com/CycloneDX/cyclonedx-python/blob/main/CHANGELOG.md"
+            },
+            {
+              "type": "vcs",
+              "url": "https://github.com/CycloneDX/cyclonedx-python/"
+            },
+            {
+              "type": "website",
+              "url": "https://github.com/CycloneDX/cyclonedx-python/#readme"
+            }
+          ],
+          "group": "CycloneDX",
+          "licenses": [
+            {
+              "license": {
+                "acknowledgement": "declared",
+                "id": "Apache-2.0"
+              }
+            }
+          ],
+          "name": "cyclonedx-py",
+          "type": "application",
+          "version": "7.6.0"
+        },
+        {
+          "description": "Python library for CycloneDX",
+          "externalReferences": [
+            {
+              "type": "build-system",
+              "url": "https://github.com/CycloneDX/cyclonedx-python-lib/actions"
+            },
+            {
+              "type": "distribution",
+              "url": "https://pypi.org/project/cyclonedx-python-lib/"
+            },
+            {
+              "type": "documentation",
+              "url": "https://cyclonedx-python-library.readthedocs.io/"
+            },
+            {
+              "type": "issue-tracker",
+              "url": "https://github.com/CycloneDX/cyclonedx-python-lib/issues"
+            },
+            {
+              "type": "license",
+              "url": "https://github.com/CycloneDX/cyclonedx-python-lib/blob/main/LICENSE"
+            },
+            {
+              "type": "release-notes",
+              "url": "https://github.com/CycloneDX/cyclonedx-python-lib/blob/main/CHANGELOG.md"
+            },
+            {
+              "type": "vcs",
+              "url": "https://github.com/CycloneDX/cyclonedx-python-lib"
+            },
+            {
+              "type": "website",
+              "url": "https://github.com/CycloneDX/cyclonedx-python-lib/#readme"
+            }
+          ],
+          "group": "CycloneDX",
+          "licenses": [
+            {
+              "license": {
+                "acknowledgement": "declared",
+                "id": "Apache-2.0"
+              }
+            }
+          ],
+          "name": "cyclonedx-python-lib",
+          "type": "library",
+          "version": "11.12.0"
+        }
+      ]
+    }
+  },
+  "serialNumber": "urn:uuid:30cf59e6-5ac4-470b-95e4-156e65ad926e",
+  "version": 1,
+  "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6"
+}
