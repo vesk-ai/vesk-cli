@@ -72,7 +72,16 @@ def scan(
         False, "--include-system-prompt", help="Store the system prompt text in the results."
     ),
     redact: bool = typer.Option(
-        False, "--redact", help="Replace prompts, responses and reasoning with length markers."
+        True,
+        "--redact/--no-redact",
+        help="Store length markers instead of prompts, responses and reasoning "
+        "(default on). --no-redact stores full text.",
+    ),
+    encrypt_to: list[str] | None = typer.Option(
+        None,
+        "--encrypt-to",
+        help="age recipient (age1... or ssh public key, or a file of them), repeatable. "
+        "Writes <out>.age instead of plaintext. Needs vesk-cli[encrypt].",
     ),
     cases: list[Path] | None = typer.Option(
         None,
@@ -235,6 +244,18 @@ def report(
     results: Path = typer.Argument(Path("results.json"), help="Results JSON from `vesk scan`."),
     fmt: str = typer.Option("md", "--format", help="md, html, sarif or junit."),
     output: Path | None = typer.Option(None, "-o", "--output", help="Output file."),
+    redact: bool = typer.Option(
+        True,
+        "--redact/--no-redact",
+        help="Replace prompts, responses and reasoning in the report with length markers "
+        "(default on).",
+    ),
+    identity: Path | None = typer.Option(
+        None, "--identity", help="age identity file, to read an encrypted .age results file."
+    ),
+    encrypt_to: list[str] | None = typer.Option(
+        None, "--encrypt-to", help="age recipient; writes <output>.age (needs -o)."
+    ),
 ) -> None:
     """Render a report from a results JSON file."""
     from vesk.plugins import load_plugins
@@ -242,16 +263,31 @@ def report(
 
     load_plugins(lambda m: typer.echo(f"vesk report: {m}", err=True))
     try:
-        text = render(load_results(results), fmt)
+        from vesk.privacy import redact_results
+
+        data = load_results(results, identity)
+        text = render(redact_results(data) if redact else data, fmt)
     except ReportError as e:
         typer.echo(f"vesk report: {e}", err=True)
         raise typer.Exit(1) from e
+    if encrypt_to and output is None:
+        typer.echo("vesk report: --encrypt-to needs -o/--output", err=True)
+        raise typer.Exit(2)
     if output is None:
         typer.echo(text, nl=False)
     else:
+        from vesk.privacy import PrivacyError, encrypt_bytes, write_private
         from vesk.report.machine import write_sidecar
 
-        output.write_text(text, encoding="utf-8")
+        try:
+            if encrypt_to:
+                output = output.with_name(output.name + ".age")
+                write_private(output, encrypt_bytes(text.encode("utf-8"), encrypt_to))
+            else:
+                output.write_text(text, encoding="utf-8")
+        except (OSError, PrivacyError) as e:
+            typer.echo(f"vesk report: cannot write {output}: {e}", err=True)
+            raise typer.Exit(2) from e
         side = write_sidecar(output)
         typer.echo(
             f"wrote {output} and {side.name} (SHA-256 detects file changes; not a signature)",
@@ -264,6 +300,9 @@ def compare(
     old: Path = typer.Argument(..., help="Earlier results JSON."),
     new: Path = typer.Argument(..., help="Later results JSON."),
     as_json: bool = typer.Option(False, "--json", help="Print JSON instead of text."),
+    identity: Path | None = typer.Option(
+        None, "--identity", help="age identity file, for encrypted .age results."
+    ),
 ) -> None:
     """Compare two local runs: regressions, improvements and config changes."""
     import json
@@ -273,7 +312,7 @@ def compare(
     from vesk.report.render import ReportError, load_results
 
     try:
-        d = do_compare(load_results(old), load_results(new))
+        d = do_compare(load_results(old, identity), load_results(new, identity))
     except ReportError as e:
         typer.echo(f"vesk compare: {e}", err=True)
         raise typer.Exit(2) from e
@@ -348,3 +387,45 @@ def verify_report(
             f"  model: {m.get('model')}"
         )
     typer.echo("This is tamper-evidence only. It is not a certification of the tested system.")
+
+
+@app.command()
+def purge(
+    paths: list[Path] | None = typer.Argument(
+        None, help="Files or directories to scan (default: current directory)."
+    ),
+    older_than: str = typer.Option(
+        "30d", "--older-than", help="Minimum age: 12h, 30d, 2w. Use 0d for everything."
+    ),
+    dry_run: bool = typer.Option(False, "--dry-run", help="List what would be deleted."),
+    yes: bool = typer.Option(False, "-y", "--yes", help="Delete without asking."),
+) -> None:
+    """Delete old Vesk results and reports (and their .sha256 files).
+
+    Only results JSON files and files with a vesk .sha256 sidecar are considered.
+    """
+    from vesk.privacy import PrivacyError, find_purgeable, parse_duration
+    from vesk.privacy import purge as do_purge
+
+    try:
+        items = find_purgeable(paths or [Path(".")], parse_duration(older_than))
+    except PrivacyError as e:
+        typer.echo(f"vesk purge: {e}", err=True)
+        raise typer.Exit(2) from e
+    for it in items:
+        typer.echo(f"{it.path}  ({it.age_s / 86400:.1f} days old)")
+    if not items:
+        typer.echo("nothing to purge")
+        return
+    if dry_run:
+        typer.echo(f"{len(items)} file(s) would be deleted")
+        return
+    if not yes and not typer.confirm(f"Delete {len(items)} file(s)?"):
+        typer.echo("aborted", err=True)
+        raise typer.Exit(1)
+    try:
+        n = do_purge(items)
+    except PrivacyError as e:
+        typer.echo(f"vesk purge: {e}", err=True)
+        raise typer.Exit(2) from e
+    typer.echo(f"deleted {n} file(s). Overwrite is best effort; backups and SSDs may retain data")

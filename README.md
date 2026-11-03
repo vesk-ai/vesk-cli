@@ -47,14 +47,15 @@ Runs the configured probes against the target and writes a results JSON file.
 - `--max-tokens N`, `--reasoning-effort LEVEL`: sent to the target and recorded in the results. Thinking models need a larger `--max-tokens`, or they spend it all on reasoning and return empty content (reported as `error` at preflight, `inconclusive` mid-run; never a pass).
 - `--system-prompt-file PATH`, `--system-name NAME`: the system prompt to test under, and the name shown in the report. Without a prompt, a versioned baseline prompt is used and recorded.
 - `--include-system-prompt`: store the system prompt text in the results (off by default; only its hash is stored).
-- `--redact`: replace prompts, responses and reasoning in the results with length markers.
+- `--redact / --no-redact`: results store length markers instead of prompts, responses and reasoning (**on by default**). `--no-redact` stores full text.
+- `--encrypt-to RECIPIENT`: encrypt the results with [age](https://age-encryption.org) and write `<out>.age` (repeatable; `pip install 'vesk-cli[encrypt]'`). See [docs/data-at-rest.md](docs/data-at-rest.md).
 - `--cases PATH`: your own test cases (YAML or JSON, repeatable). See [docs/custom-cases.md](docs/custom-cases.md).
 - `-q, --quiet`: no progress output; print only the final summary.
 - `--fail-on LEVEL`: `none`, `low`, `medium` or `high`; exit 1 on a failure at or above it. Overrides `scan.fail_on`.
 - `--offline`: refuse any target (or judge) that is not `localhost` or a private IP address, and block every other socket and DNS lookup for the run. Use IP addresses for on-prem endpoints; hostnames other than `localhost` need DNS and are rejected.
 - `--judge`: also ask the bring-your-own judge from the config. Responses are sent to the judge endpoint.
 
-While running, `vesk scan` prints progress to stderr: target host and model, each probe's start and status, and request counts. It never prints prompts, responses, API keys, URL paths or credentials. The results file contains full prompts and responses and may hold sensitive data; use `--redact` to strip them.
+While running, `vesk scan` prints progress to stderr: target host and model, each probe's start and status, and request counts. It never prints prompts, responses, API keys, URL paths or credentials. Results are redacted by default (statuses and counts only); `--no-redact` stores full prompts and responses, which may hold sensitive data. `vesk report` redacts by default too. Use `vesk purge` to delete old artefacts; see [docs/data-at-rest.md](docs/data-at-rest.md).
 
 Every case runs several trials, and a trial is `pass`, `fail`, `inconclusive` or `error`. A pass needs a valid, non-empty, non-truncated answer. Before the probes, a benign control prompt must get a usable answer; if not, no probe runs and each is marked `error`.
 

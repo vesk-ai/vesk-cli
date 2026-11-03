@@ -142,7 +142,7 @@ def test_progress_shows_status_without_sensitive_data(cfg, tmp_path):
 @respx.mock
 def test_each_request_is_announced_with_prompt_and_verdict(cfg, tmp_path):
     respx.post(URL).mock(side_effect=vulnerable)
-    r, _ = scan(cfg, tmp_path, "--probe", "prompt_injection")
+    r, _ = scan(cfg, tmp_path, "--no-redact", "--probe", "prompt_injection")
     lines = r.output.splitlines()
     sending = [x for x in lines if "] sending " in x]
     verdicts = [x for x in lines if re.search(r"\] (PASS|FAIL|ERROR|INCONCLUSIVE)", x)]

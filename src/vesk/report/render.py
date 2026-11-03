@@ -22,11 +22,22 @@ class ReportError(Exception):
     """Results file could not be read or rendered."""
 
 
-def load_results(path: Path) -> Results:
+def load_results(path: Path, identity: Path | None = None) -> Results:
+    """Read a results file; `.age` files need `identity` (an age identity file)."""
     try:
-        raw = path.read_text(encoding="utf-8")
-    except OSError as e:
-        raise ReportError(f"cannot read {path}: {e.strerror or e}") from e
+        if path.suffix == ".age":
+            from vesk.privacy import PrivacyError, decrypt_bytes
+
+            if identity is None:
+                raise ReportError(f"{path} is encrypted; pass --identity <age identity file>")
+            try:
+                raw = decrypt_bytes(path.read_bytes(), identity).decode("utf-8")
+            except PrivacyError as e:
+                raise ReportError(str(e)) from e
+        else:
+            raw = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as e:
+        raise ReportError(f"cannot read {path}: {getattr(e, 'strerror', None) or e}") from e
     try:
         return Results.model_validate(json.loads(raw))
     except json.JSONDecodeError as e:

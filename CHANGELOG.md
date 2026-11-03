@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Results at rest (docs/data-at-rest.md): `vesk purge` deletes old results and reports (and `.sha256` files) by age, with `--dry-run`; optional age encryption via `--encrypt-to` on `scan` and `report` and `--identity` on `report`/`compare` (`pip install 'vesk-cli[encrypt]'`). Encrypted files are written 0600.
 - Detector evaluation: hand-labelled set (`evals/`, 107 entries) and per-probe TPR/FPR with Wilson intervals; see `docs/detection-metrics.md`. No real models measured yet.
 - Report integrity (docs/signing.md): `vesk keygen`, `vesk sign`, `vesk scan --sign-key` and `vesk verify-report` with detached Ed25519 signatures (`<file>.sig`). Tamper-evidence only, not certification. Results metadata gains `config_sha256` and `probes`.
 - `vesk scan --offline`: only localhost/private-IP targets; all other sockets and DNS lookups are blocked. No-telemetry guarantee documented in the README and enforced by a socket-guard test. `meta.py` audited: no network use.
@@ -12,6 +13,7 @@
 - Client: responses with `tool_calls` and null content are valid.
 
 ### Changed
+- **Breaking default:** `vesk scan` now redacts stored prompts, responses, reasoning, tool arguments, custom-case evidence and judge reasons by default; use `--no-redact` for the old behaviour. `vesk report` (md, html, sarif, junit) redacts by default too, including results stored in full; `vesk report --no-redact` shows them.
 - pii_leakage: planted PII found only in the reasoning trace (reply clean) is now `inconclusive` (`reasoning_only_match`) instead of `fail`. Reports show the reasoning text with values masked.
 
 ## 0.2.2 - 2026-11-03

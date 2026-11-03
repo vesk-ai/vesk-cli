@@ -34,7 +34,8 @@ Source = "https://github.com/vesk-ai/vesk-cli"
 Issues = "https://github.com/vesk-ai/vesk-cli/issues"
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-asyncio", "respx", "ruff", "mypy", "types-PyYAML", "build"]
+encrypt = ["pyrage>=1.1"]
+dev = ["pyrage>=1.1", "pytest", "pytest-asyncio", "respx", "ruff", "mypy", "types-PyYAML", "build"]
 
 [project.entry-points."vesk.plugins"]
 # Third-party packages declare their own entry in this group; see docs/plugins.md.
