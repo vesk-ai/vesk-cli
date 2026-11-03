@@ -82,6 +82,10 @@ vesk report results.json --format html -o report.html
 
 Every report carries the notice: "Point-in-time test of the stated target and configuration. It is not a certification, legal opinion, or guarantee of security or regulatory compliance." Reports warn when a result is inconclusive or when the target is a raw model endpoint rather than an application.
 
+### `vesk keygen`, `vesk sign`, `vesk verify-report`
+
+Detached Ed25519 signatures for results files: `vesk scan --sign-key K.key` writes `results.json.sig`; `vesk verify-report results.json --pubkey K.pub` checks it and prints the tool, probe pack, config hash and model. Tamper-evidence only, not certification. See [docs/signing.md](docs/signing.md).
+
 ### `vesk compare`
 
 ```

@@ -28,6 +28,7 @@ async def test_metadata_is_complete_and_secret_free():
     m = r.metadata
     assert r.schema_version == 2 and r.run_id and m["tool_version"]
     assert m["suite"]["content_hash"] == meta.suite_hash()
+    assert len(m["config_sha256"]) == 64 and m["probes"] == ["pii_leakage"]
     assert m["target_url"] == "https://llm.test/v1"
     assert m["target_type"] == "model_endpoint"
     assert m["system_prompt"]["source"] == "default_baseline"

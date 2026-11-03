@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import platform
 import subprocess
 import sys
@@ -23,6 +24,14 @@ def new_run_id() -> str:
 
 def sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def config_hash(cfg: dict) -> str:
+    """SHA-256 of the effective config (after CLI overrides) in canonical JSON form.
+
+    The config holds the NAME of the API key variable, never the key.
+    """
+    return sha256_text(json.dumps(cfg, sort_keys=True, separators=(",", ":")))
 
 
 def sanitize_url(url: str) -> str:

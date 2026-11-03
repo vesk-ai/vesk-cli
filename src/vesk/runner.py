@@ -207,6 +207,19 @@ def _store_text(probe: Probe, case, text: str, opts: RunOptions) -> str:
     return REDACTED.format(n=len(text)) if opts.redact and text else text
 
 
+def _store_evidence(verdict, opts: RunOptions) -> str:
+    """Built-in detectors write masked evidence; custom ones echo the matched text."""
+    if opts.redact and verdict.evidence and verdict.detector.startswith("custom"):
+        return REDACTED.format(n=len(verdict.evidence))
+    return verdict.evidence
+
+
+def _redact_judge(judge: dict) -> dict:
+    """Keep the judge's verdict; its free-text reason may quote the response."""
+    reason = judge.get("reason", "")
+    return {**judge, "reason": REDACTED.format(n=len(reason)) if reason else ""}
+
+
 PREVIEW_CHARS = 100
 
 
@@ -294,7 +307,7 @@ async def _run_probe(
                 status, reason = apply_judge(status, reason, judge)
         return case.id, TrialResult(
             **base,
-            judge=judge,
+            judge=_redact_judge(judge) if opts.redact and judge else judge,
             status=status,
             status_reason=reason,
             response=_store_text(probe, case, comp.content, opts),
@@ -309,7 +322,7 @@ async def _run_probe(
             latency_s=comp.latency_s,
             started_at=comp.started_at,
             detector=verdict.detector,
-            evidence=verdict.evidence,
+            evidence=_store_evidence(verdict, opts),
             evidence_source=verdict.evidence_source,
             reasoning_match=verdict.reasoning_match,
         )
@@ -439,6 +452,8 @@ async def run_scan(
         "tool_version": __version__,
         "git_commit": meta.git_commit(),
         "suite": {"id": "vesk-core", "version": __version__, "content_hash": meta.suite_hash()},
+        "probes": [p.name for p in probes],
+        "config_sha256": meta.config_hash(cfg.model_dump(mode="json")),
         "target_url": meta.sanitize_url(cfg.target.base_url),
         "target_type": cfg.target.type,
         "model": cfg.target.model,
