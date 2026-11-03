@@ -3,8 +3,6 @@
 **Vesk Verify** tests an OpenAI-compatible LLM endpoint with prompt-injection, jailbreak and
 PII-leakage probes, then renders a report mapped to EU AI Act, DPDP and NIST AI RMF.
 
-> Status: alpha (0.1.x). Interfaces may change between minor versions.
-
 ## Install
 
 ```
