@@ -50,6 +50,7 @@ Runs the configured probes against the target and writes a results JSON file.
 - `--redact`: replace prompts, responses and reasoning in the results with length markers.
 - `--cases PATH`: your own test cases (YAML or JSON, repeatable). See [docs/custom-cases.md](docs/custom-cases.md).
 - `-q, --quiet`: no progress output; print only the final summary.
+- `--fail-on LEVEL`: `none`, `low`, `medium` or `high`; exit 1 on a failure at or above it. Overrides `scan.fail_on`.
 - `--judge`: also ask the bring-your-own judge from the config. Responses are sent to the judge endpoint.
 
 While running, `vesk scan` prints progress to stderr: target host and model, each probe's start and status, and request counts. It never prints prompts, responses, API keys, URL paths or credentials. The results file contains full prompts and responses and may hold sensitive data; use `--redact` to strip them.
@@ -65,7 +66,7 @@ Exit codes:
 | 2 | No failures, but at least one inconclusive result (also used for configuration or file errors at startup). |
 | 3 | Tool, configuration or target error with no failure proven. |
 
-A proven failure always wins over an error. This makes `vesk scan` usable as a CI gate.
+A proven failure always wins over an error. This makes `vesk scan` usable as a CI gate. Output is plain text with no colour codes. A `Dockerfile` and GitHub Actions / GitLab CI examples (with SARIF upload) are in [examples/ci](examples/ci).
 
 ### `vesk report`
 

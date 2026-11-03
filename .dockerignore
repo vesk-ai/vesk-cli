@@ -1,0 +1,8 @@
+.git
+.claude
+dist
+**/__pycache__
+.venv
+.env
+results*.json
+tests

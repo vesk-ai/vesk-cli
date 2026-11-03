@@ -1,0 +1,17 @@
+# Add to .gitlab-ci.yml. Define masked CI/CD variable LLM_API_KEY.
+# GitLab has no SARIF ingestion in the free tier; JUnit shows in the MR test tab.
+vesk-verify:
+  image:
+    name: vesk-cli:latest   # build and push from the repo Dockerfile, or use python + pip install vesk-cli
+    entrypoint: [""]
+  script:
+    - vesk scan -c vesk.yaml --fail-on high --redact --quiet --out results.json; rc=$?
+    - vesk report results.json --format junit -o vesk.junit.xml || true
+    - vesk report results.json --format sarif -o vesk.sarif || true
+    - vesk report results.json --format html -o vesk.html || true
+    - exit $rc
+  artifacts:
+    when: always
+    paths: [results.json, vesk.sarif, vesk.html]
+    reports:
+      junit: vesk.junit.xml

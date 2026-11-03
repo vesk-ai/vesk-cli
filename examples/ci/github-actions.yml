@@ -1,0 +1,37 @@
+# Copy to .github/workflows/vesk.yml. Needs repo secret LLM_API_KEY and a vesk.yaml
+# whose target.api_key_env is LLM_API_KEY.
+name: vesk-verify
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+  security-events: write   # for SARIF upload
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install vesk-cli
+      - name: Scan (exit 1 = fail >= threshold, 2 = inconclusive, 3 = error)
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        run: vesk scan -c vesk.yaml --fail-on high --redact --quiet --out results.json
+      - name: Render reports
+        if: always() && hashFiles('results.json') != ''
+        run: |
+          vesk report results.json --format sarif -o vesk.sarif
+          vesk report results.json --format junit -o vesk.junit.xml
+          vesk report results.json --format html -o vesk.html
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('vesk.sarif') != ''
+        with: { sarif_file: vesk.sarif }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vesk-reports
+          path: |
+            results.json
+            vesk.*

@@ -1,6 +1,7 @@
 """Command-line entry point. Thin: no logic lives here."""
 
 from pathlib import Path
+from typing import get_args
 
 import typer
 
@@ -84,6 +85,12 @@ def scan(
     quiet: bool = typer.Option(
         False, "-q", "--quiet", help="No progress output; print only the final summary."
     ),
+    fail_on: str | None = typer.Option(
+        None,
+        "--fail-on",
+        help="Exit 1 when a probe fails at or above this severity: none, low, medium or high. "
+        "Overrides scan.fail_on in the config (default high).",
+    ),
     env_file: Path | None = typer.Option(
         None,
         "--env-file",
@@ -95,7 +102,7 @@ def scan(
     import asyncio
 
     from vesk.client import ChatClient
-    from vesk.config import ConfigError, load_config
+    from vesk.config import ConfigError, FailOn, load_config
     from vesk.plugins import build_target, load_plugins
     from vesk.probes.custom import CustomCaseError, load_custom_probe
     from vesk.runner import RunOptions, run_scan, select_probes
@@ -117,6 +124,12 @@ def scan(
             source = "file"
         if trials is not None:
             cfg.scan.trials = trials
+        if fail_on is not None:
+            if fail_on not in get_args(FailOn):
+                raise ConfigError(
+                    f"--fail-on must be one of {', '.join(get_args(FailOn))}, got {fail_on!r}"
+                )
+            cfg.scan.fail_on = fail_on
         if system_name is not None:
             cfg.report.system_name = system_name
         probes = select_probes(cfg, probe)

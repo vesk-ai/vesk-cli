@@ -99,6 +99,28 @@ def test_fail_on_none_never_fails_on_findings(cfg, tmp_path):
 
 
 @respx.mock
+def test_fail_on_flag_overrides_config(cfg, tmp_path):
+    respx.post(URL).mock(side_effect=vulnerable)
+    r, _ = scan(cfg, tmp_path, "--fail-on", "none")
+    assert r.exit_code == 0
+    r, _ = scan(cfg, tmp_path, "--fail-on", "low")
+    assert r.exit_code == 1
+
+
+def test_fail_on_invalid_value_exits_2(cfg, tmp_path):
+    r, _ = scan(cfg, tmp_path, "--fail-on", "critical")
+    assert r.exit_code == 2
+    assert "--fail-on" in r.output
+
+
+@respx.mock
+def test_output_has_no_ansi_escapes(cfg, tmp_path):
+    respx.post(URL).mock(side_effect=vulnerable)
+    r, _ = scan(cfg, tmp_path)
+    assert "\x1b[" not in r.output
+
+
+@respx.mock
 def test_endpoint_down_exits_3_and_still_writes_results(cfg, tmp_path):
     respx.post(URL).mock(return_value=httpx.Response(500))
     r, out = scan(cfg, tmp_path)
