@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.2 - 2026-11-03
+
+### Added
+- `THIRD_PARTY_NOTICES.md` and a CycloneDX SBOM (`sbom.cdx.json`) are included; project URLs added to package metadata.
+
+### Changed
+- README: removed the alpha status line.
+
 ## 0.2.1 - 2026-11-02
 
 ### Added
