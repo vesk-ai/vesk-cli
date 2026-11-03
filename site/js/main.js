@@ -19,6 +19,21 @@
     els.forEach(function (el) { el.classList.add("pre"); io.observe(el); });
   }
 
+  // Scroll progress bar + gentle hero parallax (skipped for reduced motion)
+  var bar = document.querySelector(".progress"), art = document.querySelector(".orbit-svg");
+  if (!reduce && bar) {
+    var tick = false;
+    window.addEventListener("scroll", function () {
+      if (tick) return; tick = true;
+      requestAnimationFrame(function () {
+        var max = document.documentElement.scrollHeight - window.innerHeight;
+        bar.style.transform = "scaleX(" + (max > 0 ? window.scrollY / max : 0) + ")";
+        if (art) art.style.setProperty("--py", Math.min(window.scrollY * 0.12, 80) + "px");
+        tick = false;
+      });
+    }, { passive: true });
+  }
+
   // Loop diagram: highlight each module in turn
   var nodes = document.querySelectorAll(".loop-node");
   if (nodes.length && !reduce) {
@@ -51,6 +66,14 @@
 // Drop the real file in site/img/ with the same name and it is used automatically.
 (function () {
   document.querySelectorAll("img[data-ph]").forEach(function (img) {
+    var optional = img.hasAttribute("data-optional");
+    if (optional) {
+      // Optional slot: stays hidden until the real file exists; no placeholder box.
+      img.onerror = function () { img.onerror = null; };
+      img.onload = function () { img.classList.add("loaded"); };
+      if (img.complete && img.naturalWidth > 0) img.classList.add("loaded");
+      return;
+    }
     function ph() {
       var w = +img.getAttribute("width"), h = +img.getAttribute("height");
       var name = img.getAttribute("src").split("/").pop();

@@ -16,6 +16,7 @@
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
+<div class="progress" aria-hidden="true"></div>
 <header><div class="wrap">
   <a class="logo" href="#top"><img src="favicon.svg" alt="" width="30" height="30">Vesk</a>
   <button class="nav-toggle" aria-expanded="false" aria-controls="nav">Menu</button>
@@ -32,7 +33,24 @@
     <div class="actions"><a class="btn primary" href="#early-access">Request early access</a><a class="btn ghost" href="#roadmap">See the roadmap</a></div>
     <p class="note">Vesk is in development and has not launched. We are talking with a small number of teams before launch.</p>
   </div>
-  <img data-ph src="img/hero-visual.webp" width="800" height="600" alt="Abstract illustration of an AI system surrounded by checks and a record trail" fetchpriority="high">
+  <div class="hero-art" aria-hidden="true">
+    <svg viewBox="0 0 520 520" class="orbit-svg" fill="none">
+      <defs>
+        <radialGradient id="core" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#5eead4"/><stop offset="1" stop-color="#a78bfa" stop-opacity=".2"/></radialGradient>
+        <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5eead4"/><stop offset="1" stop-color="#a78bfa"/></linearGradient>
+      </defs>
+      <circle class="halo" cx="260" cy="260" r="110" fill="url(#core)" opacity=".35"/>
+      <circle cx="260" cy="260" r="46" fill="url(#core)"/>
+      <circle class="ring r1" cx="260" cy="260" r="110" stroke="url(#ring)" stroke-width="1.5" stroke-dasharray="4 10"/>
+      <circle class="ring r2" cx="260" cy="260" r="165" stroke="url(#ring)" stroke-width="1.5"/>
+      <circle class="ring r3" cx="260" cy="260" r="220" stroke="#263056" stroke-width="1.5" stroke-dasharray="2 8"/>
+      <g class="spin s1"><circle cx="260" cy="95" r="9" fill="#5eead4"/><text x="276" y="99">Verify</text></g>
+      <g class="spin s2"><circle cx="425" cy="260" r="9" fill="#a78bfa"/><text x="441" y="264" >Explain</text></g>
+      <g class="spin s3"><circle cx="260" cy="425" r="9" fill="#5eead4"/><text x="276" y="429">Safeguard</text></g>
+      <g class="spin s4"><circle cx="95" cy="260" r="9" fill="#a78bfa"/><text x="32" y="246">Know</text></g>
+    </svg>
+    <img class="hero-img" data-ph data-optional src="img/hero-visual.webp" width="1600" height="1200" alt="Abstract illustration of an AI system surrounded by checks and a record trail" fetchpriority="high">
+  </div>
 </div></div>
 
 <section id="problem"><div class="wrap problem reveal">
@@ -45,27 +63,67 @@
 
 <section id="modules" class="alt"><div class="wrap">
   <p class="eyebrow">What we build</p><h2>Four modules, one loop.</h2>
-  <p class="sub">Check it, understand it, constrain it, record it.</p>
-  <div class="loop reveal" aria-hidden="true"><span class="loop-node on">Verify</span><span class="arr">→</span><span class="loop-node">Explain</span><span class="arr">→</span><span class="loop-node">Safeguard</span><span class="arr">→</span><span class="loop-node">Know</span><span class="arr">↺</span></div>
-  <div class="grid">
-    <article class="card reveal"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg></span><h3>Verify</h3><p><b>Check before you ship.</b> Verify is intended to run tests on AI systems before and after release: accuracy, consistency, bias and failure cases. A change to a model or prompt gets tested instead of assumed safe.</p><p class="tag">Pre-launch</p></article>
-    <article class="card reveal"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span><h3>Explain</h3><p><b>See why it said that.</b> Explain is intended to show the inputs, context and steps behind an output. An engineer can debug it. A reviewer can follow it without reading the code.</p><p class="tag">Pre-launch</p></article>
-    <article class="card reveal"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></span><h3>Safeguard</h3><p><b>Set limits that hold.</b> Safeguard is intended to apply rules while the system runs. Examples: stop personal data leaving the system, or flag an answer outside approved topics. Every time a rule triggers, it is logged.</p><p class="tag">Pre-launch</p></article>
-    <article class="card reveal"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg></span><h3>Know</h3><p><b>Keep the record straight.</b> Know is intended to keep an inventory of the AI systems in use: who owns each one, what data it touches, and what testing and decisions are on record. Questions from auditors or leadership can then be answered from one place.</p><p class="tag">Pre-launch</p></article>
-  </div>
+  <p class="sub">Check it, understand it, constrain it, record it. Each module is described below as designed. None is released yet.</p>
+  <div class="loop reveal" aria-hidden="true"><a href="#m-verify" class="loop-node on" tabindex="-1">Verify</a><span class="arr">→</span><a href="#m-explain" class="loop-node" tabindex="-1">Explain</a><span class="arr">→</span><a href="#m-safeguard" class="loop-node" tabindex="-1">Safeguard</a><span class="arr">→</span><a href="#m-know" class="loop-node" tabindex="-1">Know</a><span class="arr">↺</span></div>
+  <article class="module reveal " id="m-verify">
+    <div class="m-text"><p class="m-num">01 / 04</p><h3>Verify</h3><p class="m-lead">Check before you ship.</p><p>Verify is intended to run tests on AI systems before and after release: accuracy, consistency, bias and failure cases. A change to a model or prompt gets tested instead of assumed safe.</p><p class="tag">Pre-launch · not yet available</p></div>
+    <figure class="m-vis" aria-hidden="true"><svg viewBox="0 0 400 260" class="vis vis-verify"><rect class="panel" x="10" y="10" width="380" height="240" rx="14"/>
+<g class="row"><rect x="30" y="40" width="22" height="22" rx="6" class="box"/><path d="M35 51l5 5 8-10" class="tick t1"/><rect x="66" y="46" width="200" height="10" rx="5" class="bar"/><rect x="290" y="44" width="70" height="14" rx="7" class="pill ok"/></g>
+<g class="row"><rect x="30" y="86" width="22" height="22" rx="6" class="box"/><path d="M35 97l5 5 8-10" class="tick t2"/><rect x="66" y="92" width="160" height="10" rx="5" class="bar"/><rect x="290" y="90" width="70" height="14" rx="7" class="pill ok"/></g>
+<g class="row"><rect x="30" y="132" width="22" height="22" rx="6" class="box warnb"/><path d="M36 138l10 10M46 138l-10 10" class="cross t3"/><rect x="66" y="138" width="220" height="10" rx="5" class="bar"/><rect x="290" y="136" width="70" height="14" rx="7" class="pill bad"/></g>
+<g class="row"><rect x="30" y="178" width="22" height="22" rx="6" class="box"/><path d="M35 189l5 5 8-10" class="tick t4"/><rect x="66" y="184" width="130" height="10" rx="5" class="bar"/><rect x="290" y="182" width="70" height="14" rx="7" class="pill ok"/></g>
+<rect class="scan" x="14" y="30" width="372" height="3" rx="2"/></svg><figcaption>Illustrative concept, not a product screenshot</figcaption></figure>
+  </article>
+  <article class="module reveal rev" id="m-explain">
+    <div class="m-text"><p class="m-num">02 / 04</p><h3>Explain</h3><p class="m-lead">See why it said that.</p><p>Explain is intended to show the inputs, context and steps behind an output. An engineer can debug it. A reviewer can follow it without reading the code.</p><p class="tag">Pre-launch · not yet available</p></div>
+    <figure class="m-vis" aria-hidden="true"><svg viewBox="0 0 400 260" class="vis vis-explain"><rect class="panel" x="10" y="10" width="380" height="240" rx="14"/>
+<path class="edge e1" d="M60 130 C110 130 110 70 160 70"/><path class="edge e2" d="M60 130 C110 130 110 190 160 190"/><path class="edge e3" d="M160 70 C220 70 220 130 270 130"/><path class="edge e4" d="M160 190 C220 190 220 130 270 130"/><path class="edge e5" d="M270 130 L340 130"/>
+<circle class="node n0" cx="60" cy="130" r="16"/><circle class="node n1" cx="160" cy="70" r="14"/><circle class="node n2" cx="160" cy="190" r="14"/><circle class="node n3" cx="270" cy="130" r="14"/><circle class="node n4 out" cx="340" cy="130" r="18"/>
+<text x="60" y="168" class="lbl">input</text><text x="160" y="106" class="lbl">context</text><text x="160" y="226" class="lbl">steps</text><text x="340" y="168" class="lbl">output</text></svg><figcaption>Illustrative concept, not a product screenshot</figcaption></figure>
+  </article>
+  <article class="module reveal " id="m-safeguard">
+    <div class="m-text"><p class="m-num">03 / 04</p><h3>Safeguard</h3><p class="m-lead">Set limits that hold.</p><p>Safeguard is intended to apply rules while the system runs. Examples: stop personal data leaving the system, or flag an answer outside approved topics. Every time a rule triggers, it is logged.</p><p class="tag">Pre-launch · not yet available</p></div>
+    <figure class="m-vis" aria-hidden="true"><svg viewBox="0 0 400 260" class="vis vis-safe"><rect class="panel" x="10" y="10" width="380" height="240" rx="14"/>
+<path class="lane" d="M30 130 H370"/>
+<rect class="gate" x="180" y="60" width="40" height="140" rx="10"/><rect class="gate-in" x="190" y="100" width="20" height="60" rx="6"/>
+<circle class="pk p1" r="7" cx="30" cy="130"/><circle class="pk p2" r="7" cx="30" cy="130"/><circle class="pk p3 blocked" r="7" cx="30" cy="130"/>
+<text x="100" y="196" class="lbl">output</text><text x="300" y="196" class="lbl">allowed</text><text x="200" y="228" class="lbl red">rule triggered: logged</text></svg><figcaption>Illustrative concept, not a product screenshot</figcaption></figure>
+  </article>
+  <article class="module reveal rev" id="m-know">
+    <div class="m-text"><p class="m-num">04 / 04</p><h3>Know</h3><p class="m-lead">Keep the record straight.</p><p>Know is intended to keep an inventory of the AI systems in use: who owns each one, what data it touches, and what testing and decisions are on record. Questions from auditors or leadership can then be answered from one place.</p><p class="tag">Pre-launch · not yet available</p></div>
+    <figure class="m-vis" aria-hidden="true"><svg viewBox="0 0 400 260" class="vis vis-know"><rect class="panel" x="10" y="10" width="380" height="240" rx="14"/>
+<g class="trow r1"><rect x="30" y="34" width="340" height="38" rx="8" class="cell"/><circle cx="52" cy="53" r="6" class="dot"/><rect x="70" y="48" width="110" height="10" rx="5" class="bar"/><text x="220" y="57" class="lbl l">owner</text><text x="290" y="57" class="lbl l">data</text></g>
+<g class="trow r2"><rect x="30" y="82" width="340" height="38" rx="8" class="cell"/><circle cx="52" cy="101" r="6" class="dot"/><rect x="70" y="96" width="90" height="10" rx="5" class="bar"/><text x="220" y="105" class="lbl l">owner</text><text x="290" y="105" class="lbl l">data</text></g>
+<g class="trow r3"><rect x="30" y="130" width="340" height="38" rx="8" class="cell"/><circle cx="52" cy="149" r="6" class="dot"/><rect x="70" y="144" width="130" height="10" rx="5" class="bar"/><text x="220" y="153" class="lbl l">owner</text><text x="290" y="153" class="lbl l">data</text></g>
+<g class="trow r4"><rect x="30" y="178" width="340" height="38" rx="8" class="cell"/><circle cx="52" cy="197" r="6" class="dot"/><rect x="70" y="192" width="100" height="10" rx="5" class="bar"/><text x="220" y="201" class="lbl l">owner</text><text x="290" y="201" class="lbl l">data</text></g>
+<text x="30" y="238" class="lbl l">reviews and decisions on record</text></svg><figcaption>Illustrative concept, not a product screenshot</figcaption></figure>
+  </article>
   <p class="status">Status: all four modules are pre-launch.</p>
-  <img class="reveal" data-ph src="img/modules-banner.webp" width="1680" height="720" alt="Wide illustration of four connected stages: test, explain, limit, record" loading="lazy" style="margin-top:40px;border-radius:16px;width:100%;height:auto">
+  <img class="reveal banner" data-ph data-optional src="img/modules-banner.webp" width="2520" height="1080" alt="Wide illustration of four connected stages: test, explain, limit, record" loading="lazy">
 </div></section>
 
 <section id="roadmap"><div class="wrap">
-  <p class="eyebrow">Roadmap</p><h2>Planned, not available yet. <span class="badge">Planned</span></h2>
-  <p class="sub">Everything below is a plan. Dates and order may change. We will not describe an item as available until it ships.</p>
-  <ol class="timeline">
-    <li class="reveal"><strong>Now</strong><p>Defining the four modules with early-access teams; building the first version.</p><span class="badge">In development</span></li>
-    <li class="reveal"><strong>Next</strong><p>First early-access release to a small group of teams.</p><span class="badge">Planned · no date</span></li>
-    <li class="reveal"><strong>Later</strong><p>Wider availability after early-access feedback.</p><span class="badge">Planned · no date</span></li>
-  </ol>
-  <h3 style="margin-top:48px">Planned capabilities</h3>
+  <p class="eyebrow">Roadmap</p><h2>What exists, and what is planned.</h2>
+  <p class="sub">Two clearly separate lists. Dates and order of planned items may change. We will not describe an item as available until it ships.</p>
+  <div class="split">
+    <div class="today reveal">
+      <h3>Today <span class="badge ok">In development</span></h3>
+      <ul>
+        <li>The four modules are being defined with early-access teams.</li>
+        <li>The first version is being built.</li>
+        <li>This site, which describes the plan. No Vesk product is available yet.</li>
+      </ul>
+    </div>
+    <div class="planned reveal">
+      <h3>Planned <span class="badge">Not available yet</span></h3>
+      <ol class="timeline">
+        <li><strong>Now</strong><p>Defining the four modules with early-access teams; building the first version.</p><span class="badge">In development</span></li>
+        <li><strong>Next</strong><p>First early-access release to a small group of teams.</p><span class="badge">Planned · no date</span></li>
+        <li><strong>Later</strong><p>Wider availability after early-access feedback.</p><span class="badge">Planned · no date</span></li>
+      </ol>
+    </div>
+  </div>
+  <h3 class="caps-h">Planned capabilities</h3>
   <div class="caps">
     <div class="cap reveal"><b>Verify</b><p>Repeatable test suites that run on every model or prompt change.</p><span class="badge">Planned</span></div>
     <div class="cap reveal"><b>Explain</b><p>A trace view for a single output.</p><span class="badge">Planned</span></div>
