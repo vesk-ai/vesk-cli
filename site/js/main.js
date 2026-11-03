@@ -9,6 +9,7 @@
     if (e.target.tagName === "A") { nav.classList.remove("open"); btn.setAttribute("aria-expanded", "false"); }
   });
 
+  document.documentElement.classList.add("js");
   // Reveal on scroll (skipped for reduced motion / no IntersectionObserver)
   var els = document.querySelectorAll(".reveal");
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -19,8 +20,8 @@
     els.forEach(function (el) { el.classList.add("pre"); io.observe(el); });
   }
 
-  // Scroll progress bar + gentle hero parallax (skipped for reduced motion)
-  var bar = document.querySelector(".progress"), art = document.querySelector(".orbit-svg");
+  // Scroll progress bar
+  var bar = document.querySelector(".progress");
   if (!reduce && bar) {
     var tick = false;
     window.addEventListener("scroll", function () {
@@ -28,20 +29,45 @@
       requestAnimationFrame(function () {
         var max = document.documentElement.scrollHeight - window.innerHeight;
         bar.style.transform = "scaleX(" + (max > 0 ? window.scrollY / max : 0) + ")";
-        if (art) art.style.setProperty("--py", Math.min(window.scrollY * 0.12, 80) + "px");
         tick = false;
       });
     }, { passive: true });
   }
 
-  // Loop diagram: highlight each module in turn
-  var nodes = document.querySelectorAll(".loop-node");
-  if (nodes.length && !reduce) {
-    var i = 0;
-    setInterval(function () {
-      nodes.forEach(function (n) { n.classList.remove("on"); });
-      nodes[i++ % nodes.length].classList.add("on");
-    }, 1800);
+  // "How it works": stamp the pinned record as each step scrolls into view
+  var steps = document.querySelectorAll(".step"), stamps = document.querySelectorAll(".stamp");
+  function setStep(n) {
+    steps.forEach(function (s) { s.classList.toggle("on", +s.dataset.s === n); });
+    stamps.forEach(function (s) { s.classList.toggle("on", +s.dataset.s <= n); });
+  }
+  if (steps.length && "IntersectionObserver" in window) {
+    setStep(1);
+    var so = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) setStep(+en.target.dataset.s); });
+    }, { rootMargin: "-40% 0px -45% 0px" });
+    steps.forEach(function (s) { so.observe(s); });
+  } else {
+    steps.forEach(function (s) { s.classList.add("on"); });
+    stamps.forEach(function (s) { s.classList.add("on"); });
+  }
+
+  // Ask the record: sample answers (static, illustrative)
+  var A = [
+    { q: "Why was this refused?", r: [["Decision", "Loan limit request, applicant 4471: declined"], ["Inputs used", "Income band, repayment history, requested amount"], ["Steps", "Score 412 below threshold 500, then policy rule R-7 applied"], ["Tested on", "212 cases before release; last run passed"]] },
+    { q: "What changed last week?", r: [["Change", "Prompt revision v14 to v15, support assistant"], ["Re-test", "Ran automatically; 1 of 38 checks regressed"], ["Action", "Release held; owner notified; fix reviewed and re-tested"], ["Filed", "Review and sign-off attached to the record"]] },
+    { q: "Who owns this system?", r: [["System", "Credit scoring model"], ["Owner", "Risk team"], ["Data touched", "Applicant financial history"], ["Reviews", "Quarterly review on file; next review scheduled"]] }
+  ];
+  var ans = document.getElementById("answer"), tabs = document.querySelectorAll(".chips button");
+  function show(i) {
+    var d = A[i], h = "<q>“" + d.q + "”</q><dl>";
+    d.r.forEach(function (x) { h += "<dt>" + x[0] + "</dt><dd>" + x[1] + "</dd>"; });
+    ans.innerHTML = h + "</dl>";
+    ans.classList.remove("swap"); void ans.offsetWidth; ans.classList.add("swap");
+    tabs.forEach(function (t, k) { t.setAttribute("aria-selected", k === i); });
+  }
+  if (ans) {
+    tabs.forEach(function (t, k) { t.addEventListener("click", function () { show(k); }); });
+    show(0);
   }
 
   // Early-access form: nothing is sent to any server.
@@ -59,32 +85,5 @@
     window.location.href = "mailto:" + to + "?subject=" + encodeURIComponent("Vesk early access") +
       "&body=" + encodeURIComponent(body);
     status.textContent = "Your email app should open with the request ready to send.";
-  });
-})();
-
-// Image placeholders: if img/<file> is missing, show a labelled placeholder.
-// Drop the real file in site/img/ with the same name and it is used automatically.
-(function () {
-  document.querySelectorAll("img[data-ph]").forEach(function (img) {
-    var optional = img.hasAttribute("data-optional");
-    if (optional) {
-      // Optional slot: stays hidden until the real file exists; no placeholder box.
-      img.onerror = function () { img.onerror = null; };
-      img.onload = function () { img.classList.add("loaded"); };
-      if (img.complete && img.naturalWidth > 0) img.classList.add("loaded");
-      return;
-    }
-    function ph() {
-      var w = +img.getAttribute("width"), h = +img.getAttribute("height");
-      var name = img.getAttribute("src").split("/").pop();
-      var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">' +
-        '<rect width="100%" height="100%" fill="#1a2347"/><rect x="2" y="2" width="' + (w - 4) + '" height="' + (h - 4) + '" fill="none" stroke="#3a4678" stroke-width="3" stroke-dasharray="14 10"/>' +
-        '<text x="50%" y="48%" fill="#e8ecf8" font-family="sans-serif" font-size="' + Math.round(w / 30) + '" text-anchor="middle">Image placeholder</text>' +
-        '<text x="50%" y="58%" fill="#aab3d0" font-family="monospace" font-size="' + Math.round(w / 38) + '" text-anchor="middle">img/' + name + ' · ' + w + '×' + h + '</text></svg>';
-      img.onerror = null;
-      img.src = "data:image/svg+xml," + encodeURIComponent(svg);
-    }
-    img.onerror = ph;
-    if (img.complete && img.naturalWidth === 0) ph();
   });
 })();
