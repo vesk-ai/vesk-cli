@@ -51,6 +51,7 @@ Runs the configured probes against the target and writes a results JSON file.
 - `--cases PATH`: your own test cases (YAML or JSON, repeatable). See [docs/custom-cases.md](docs/custom-cases.md).
 - `-q, --quiet`: no progress output; print only the final summary.
 - `--fail-on LEVEL`: `none`, `low`, `medium` or `high`; exit 1 on a failure at or above it. Overrides `scan.fail_on`.
+- `--offline`: refuse any target (or judge) that is not `localhost` or a private IP address, and block every other socket and DNS lookup for the run. Use IP addresses for on-prem endpoints; hostnames other than `localhost` need DNS and are rejected.
 - `--judge`: also ask the bring-your-own judge from the config. Responses are sent to the judge endpoint.
 
 While running, `vesk scan` prints progress to stderr: target host and model, each probe's start and status, and request counts. It never prints prompts, responses, API keys, URL paths or credentials. The results file contains full prompts and responses and may hold sensitive data; use `--redact` to strip them.
@@ -134,9 +135,9 @@ Probes are tagged with OWASP Top 10 for LLM Applications IDs (edition 2025, the 
 
 ## Privacy
 
-The API key is read from an environment variable and is not stored in the config. Probe
-requests go only to the endpoint you configure. PII probes use synthetic values, masked in
-stored results.
+**No telemetry.** vesk sends no analytics, crash reports, update checks or licence pings. Its only network traffic is the requests to the `target` endpoint (and the `judge` endpoint, only with `--judge`) in your config. A test (`tests/unit/test_no_telemetry.py`) runs scans under a socket guard that fails on any other host, and `vesk scan --offline` enforces the same at runtime for air-gapped use. The run metadata module only calls `git rev-parse` locally. Installing vesk (pip) and third-party plugins you add are outside this guarantee.
+
+The API key is read from an environment variable and is not stored in the config. PII probes use synthetic values, masked in stored results.
 
 ## Not legal advice
 

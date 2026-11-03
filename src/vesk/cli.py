@@ -91,11 +91,19 @@ def scan(
         help="Exit 1 when a probe fails at or above this severity: none, low, medium or high. "
         "Overrides scan.fail_on in the config (default high).",
     ),
+    sign_key: Path | None = typer.Option(
+        None, "--sign-key", help="Secret key from `vesk keygen`; also writes <out>.sig."
+    ),
     env_file: Path | None = typer.Option(
         None,
         "--env-file",
         help="Optional .env file to read the API key from. "
         "Variables already set in the environment win. Without it, only the environment is used.",
+    ),
+    offline: bool = typer.Option(
+        False,
+        "--offline",
+        help="Only allow targets on localhost or private IP addresses; block all other network.",
     ),
 ) -> None:
     """Run probes against the target and write a results JSON file."""
@@ -103,6 +111,7 @@ def scan(
 
     from vesk.client import ChatClient
     from vesk.config import ConfigError, FailOn, load_config
+    from vesk.netguard import guard, host_of, is_local_host
     from vesk.plugins import build_target, load_plugins
     from vesk.probes.custom import CustomCaseError, load_custom_probe
     from vesk.runner import RunOptions, run_scan, select_probes
@@ -139,6 +148,13 @@ def scan(
         if judge and cfg.judge is None:
             raise ConfigError("--judge needs a `judge:` section in the config")
         judge_key = cfg.judge_api_key(env_file) if judge else None
+        if offline:
+            urls = [cfg.target.base_url, *([cfg.judge.base_url] if judge and cfg.judge else [])]
+            for u in urls:
+                if not is_local_host(host_of(u)):
+                    raise ConfigError(
+                        f"--offline: {host_of(u) or u!r} is not localhost or a private IP address"
+                    )
     except (ConfigError, CustomCaseError) as e:
         typer.echo(f"vesk scan: {e}", err=True)
         raise typer.Exit(2) from e
@@ -181,12 +197,26 @@ def scan(
             "sensitive data. Use --redact to strip them.",
             err=True,
         )
-    results = asyncio.run(_go())
+    if offline:
+        with guard([], local_ok=True):
+            results = asyncio.run(_go())
+    else:
+        results = asyncio.run(_go())
     try:
         results.write(out)
     except OSError as e:
         typer.echo(f"vesk scan: cannot write {out}: {e}", err=True)
         raise typer.Exit(2) from e
+
+    if sign_key is not None:
+        from vesk.signing import SigningError, sign_file
+
+        try:
+            sig = sign_file(out, sign_key)
+        except SigningError as e:
+            typer.echo(f"vesk scan: results written but not signed: {e}", err=True)
+            raise typer.Exit(2) from e
+        typer.echo(f"wrote {sig}", err=True)
 
     for p in results.probes:
         failed = sum(1 for c in p.cases if c.status == "fail")
@@ -250,3 +280,71 @@ def compare(
     typer.echo(json.dumps(d, indent=2) if as_json else render_text(d), nl=as_json)
     if d["regressions"]:
         raise typer.Exit(1)
+
+
+@app.command()
+def keygen(
+    out: Path = typer.Option(Path("vesk-signing"), "--out", help="Key path prefix."),
+) -> None:
+    """Create an Ed25519 signing key pair: <out>.key (secret, keep private) and <out>.pub."""
+    from vesk.signing import SigningError, generate_keypair
+
+    try:
+        kid = generate_keypair(out.with_name(out.name + ".key"), out.with_name(out.name + ".pub"))
+    except SigningError as e:
+        typer.echo(f"vesk keygen: {e}", err=True)
+        raise typer.Exit(2) from e
+    typer.echo(f"wrote {out.name}.key (secret) and {out.name}.pub; key id {kid}")
+
+
+@app.command()
+def sign(
+    file: Path = typer.Argument(..., help="File to sign, usually results.json."),
+    key: Path = typer.Option(..., "--key", help="Secret key from `vesk keygen`."),
+) -> None:
+    """Write a detached signature <file>.sig (tamper-evidence, not certification)."""
+    from vesk.signing import SigningError, sign_file
+
+    try:
+        typer.echo(f"wrote {sign_file(file, key)}")
+    except SigningError as e:
+        typer.echo(f"vesk sign: {e}", err=True)
+        raise typer.Exit(2) from e
+
+
+@app.command("verify-report")
+def verify_report(
+    file: Path = typer.Argument(..., help="Signed file, usually results.json."),
+    sig: Path | None = typer.Option(None, "--sig", help="Signature file (default <file>.sig)."),
+    pubkey: Path | None = typer.Option(None, "--pubkey", help="Trusted public key (.pub)."),
+) -> None:
+    """Check a report's detached signature. Exit 0 valid, 1 invalid or modified, 2 unusable input."""
+    import json
+
+    from vesk.signing import SigningError, verify_file
+
+    try:
+        v = verify_file(file, sig, pubkey)
+    except SigningError as e:
+        typer.echo(f"vesk verify-report: {e}", err=True)
+        raise typer.Exit(2) from e
+    for p in v.problems:
+        typer.echo(f"INVALID: {p}", err=True)
+    if not v.ok:
+        raise typer.Exit(1)
+    typer.echo(f"OK: {file.name} is unchanged since signing (key id {v.key_id}, {v.signed_at})")
+    if not v.authenticated:
+        typer.echo("WARNING: " + v.notes[0], err=True)
+    try:
+        m = json.loads(file.read_text(encoding="utf-8")).get("metadata") or {}
+    except (OSError, ValueError, AttributeError):
+        m = {}
+    if m:
+        suite = m.get("suite") or {}
+        typer.echo(
+            f"  tool: {m.get('tool')} {m.get('tool_version')}\n"
+            f"  probe pack: {suite.get('id')} {suite.get('version')} {suite.get('content_hash')}\n"
+            f"  config sha256: {m.get('config_sha256')}\n"
+            f"  model: {m.get('model')}"
+        )
+    typer.echo("This is tamper-evidence only. It is not a certification of the tested system.")
