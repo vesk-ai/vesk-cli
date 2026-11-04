@@ -69,21 +69,4 @@
     tabs.forEach(function (t, k) { t.addEventListener("click", function () { show(k); }); });
     show(0);
   }
-
-  // Contact form: opens the visitor's email app; nothing is sent to any server.
-  var form = document.getElementById("ea-form"), status = document.getElementById("ea-status");
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
-    var to = (window.VESK_CONFIG || {}).CONTACT_EMAIL;
-    if (!to) {
-      status.textContent = "Sorry, this form is unavailable right now. Please email us directly; nothing you typed was sent.";
-      return;
-    }
-    var f = new FormData(form);
-    var body = "Name: " + f.get("name") + "\nCompany: " + f.get("company") + "\nEmail: " + f.get("email") +
-      "\n\nAI systems:\n" + (f.get("systems") || "");
-    window.location.href = "mailto:" + to + "?subject=" + encodeURIComponent("Vesk CLI enquiry") +
-      "&body=" + encodeURIComponent(body);
-    status.textContent = "Your email app should open with the message ready to send.";
-  });
 })();
