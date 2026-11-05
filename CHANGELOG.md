@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.0 - 2026-11-05
+
 ### Added
 - Results at rest (docs/data-at-rest.md): `vesk purge` deletes old results and reports (and `.sha256` files) by age, with `--dry-run`; optional age encryption via `--encrypt-to` on `scan` and `report` and `--identity` on `report`/`compare` (`pip install 'vesk-cli[encrypt]'`). Encrypted files are written 0600.
 - Detector evaluation: hand-labelled set (`evals/`, 107 entries) and per-probe TPR/FPR with Wilson intervals; see `docs/detection-metrics.md`. No real models measured yet.
