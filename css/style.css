@@ -117,3 +117,6 @@ footer{background:var(--ink);color:#b5ab96;border-top:1px solid #3a3328;padding:
  html{scroll-behavior:auto}.ticker-track{animation:none}.st u{animation:none;opacity:1}
  .pre{opacity:1;transform:none;transition:none}.stamp{transition:none}.answer.swap{animation:none}
 }
+
+/* install */
+.install-cmd{display:inline-block;margin:20px 0;padding:16px 24px;background:var(--ink);color:var(--paper);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1.1rem;box-shadow:5px 5px 0 var(--paper-2,#d8cfbd);overflow-x:auto;max-width:100%}
